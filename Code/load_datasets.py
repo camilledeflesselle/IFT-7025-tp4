@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 
 def load_iris_dataset(train_ratio):
     """Cette fonction a pour but de lire le dataset Iris
@@ -32,21 +33,27 @@ def load_iris_dataset(train_ratio):
     conversion_labels = {'Iris-setosa': 0, 'Iris-versicolor' : 1, 'Iris-virginica' : 2}
     
     # Le fichier du dataset est dans le dossier datasets en attaché 
+    # le code ici pour lire le dataset
     f = open('datasets/bezdekIris.data', 'r')
-    
-    
-    # TODO : le code ici pour lire le dataset
-    
-    # REMARQUE très importante : 
-	# remarquez bien comment les exemples sont ordonnés dans 
-    # le fichier du dataset, ils sont ordonnés par type de fleur, cela veut dire que 
-    # si vous lisez les exemples dans cet ordre et que si par exemple votre ration est de 60%,
-    # vous n'allez avoir aucun exemple du type Iris-virginica pour l'entrainement, pensez
-    # donc à utiliser la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
-    # en train et test.
-       
-    
-    # Tres important : la fonction doit retourner 4 matrices (ou vecteurs) de type Numpy. 
+    lines = [line.strip() for line in f.readlines()]
+    f.close()
+    lines = [line.split(",") for line in lines if line]
+    data=np.array([line[:4] for line in lines], dtype=float)
+    labels=np.array([conversion_labels[line[-1]] for line in lines], dtype=float)
+    nrow = len(data)
+    indices = np.arange(nrow)
+
+	  # les exemples sont ordonnés dans le fichier du dataset, ils sont ordonnés par type de fleur
+    # on utilise donc la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
+    # en train et test
+    np.random.shuffle(indices)
+    split = math.floor(train_ratio * nrow)
+
+    train_idx,    test_idx    = indices[:split],   indices[split:]
+    train,        test        = data[train_idx],   data[test_idx]
+    train_labels, test_labels = labels[train_idx], labels[test_idx]
+
+    # la fonction retourne 4 matrices de type Numpy. 
     return (train, train_labels, test, test_labels)
 	
 	
@@ -111,3 +118,5 @@ def load_abalone_dataset(train_ratio):
     """
     f = open('datasets/abalone-intervalles.csv', 'r') # La fonction doit retourner 4 matrices (ou vecteurs) de type Numpy.
     return (train, train_labels, test, test_labels)
+
+print(load_iris_dataset(0.7))
