@@ -4,7 +4,7 @@ import load_datasets
 import NaiveBayes # importer la classe du classifieur bayesien
 import Knn # importer la classe du Knn
 #importer d'autres fichiers et classes si vous en avez développés
-
+import metrics
 
 """
 C'est le fichier main duquel nous allons tout lancer
@@ -19,26 +19,34 @@ En gros, vous allez :
 
 # Initialisez vos paramètres
 
-
-
+L = 10
+repeat_kfold = 30
+train_ratio = 0.7
 
 
 # Initialisez/instanciez vos classifieurs avec leurs paramètres
 
-
-
+classif_knn = Knn.Knn()
 
 
 # Charger/lire les datasets
 
-
+# jeu iris
+# train, train_labels, test, test_labels = load_datasets.load_iris_dataset(train_ratio)
+# jeu wine
+train, train_labels, test, test_labels = load_datasets.load_wine_dataset(train_ratio)
+# jeu abalone
+#train, train_labels, test, test_labels = load_datasets.load_abalone_dataset(train_ratio)
 
 
 # Entrainez votre classifieur
+classif_knn.getBestKppv(train, train_labels)
 
+print("Données d'entraînement")
 
+classif_knn.train(train, train_labels)
 """
-Après avoir fait l'entrainement, évaluez votre modèle sur 
+Après avoir fait l'entrainement, nous évaluons notre modèle sur 
 les données d'entrainement.
 IMPORTANT : 
     Vous devez afficher ici avec la commande print() de python,
@@ -49,13 +57,9 @@ IMPORTANT :
     - le F1-score
 """
 
-
-
+classif_knn.evaluate(train, train_labels)
 
 # Tester votre classifieur
-
-
-
 """
 Finalement, évaluez votre modèle sur les données de test.
 IMPORTANT : 
@@ -67,6 +71,8 @@ IMPORTANT :
     - le F1-score
 """
 
+print("Données de test")
+classif_knn.evaluate(test, test_labels)
 
 
 

@@ -9,7 +9,7 @@ se fera en utilisant les méthodes train, predict et evaluate de votre code.
 """
 
 import numpy as np
-
+import metrics
 
 # le nom de votre classe
 # BayesNaif pour le modèle bayesien naif
@@ -53,11 +53,6 @@ class Classifier: #nom de la class à changer
 		m : le mobre d'attribus (le nombre de caractéristiques)
 		
 		y : est une matrice numpy de taille nx1
-		
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
 		"""
-        
-	
-	# Vous pouvez rajouter d'autres méthodes et fonctions,
-	# il suffit juste de les commenter.
+		y_pred = np.array([self.predict(x) for x in X])
+		metrics.show_metrics(y, y_pred)
