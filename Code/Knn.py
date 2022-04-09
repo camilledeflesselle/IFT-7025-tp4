@@ -12,7 +12,6 @@ import math
 import metrics
 import matplotlib.pyplot as plt
 import operator 
-import random
 # Knn pour le modèle des k plus proches voisins
 
 class Knn:
@@ -26,7 +25,7 @@ class Knn:
 		self.L = L
 		self.repeat_kfold = repeat_kfold
 		self.k = k
-		random.seed(1)
+
 		
 
 	def euclideanDistance(self, row1, row2):

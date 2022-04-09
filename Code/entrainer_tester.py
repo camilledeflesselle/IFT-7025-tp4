@@ -45,7 +45,7 @@ classif_knn.getBestKppv(train, train_labels)
 print("\n######################################\nDonnées d'entraînement")
 
 classif_knn.train(train, train_labels)
-classif_knn.plotAccuracy()
+#classif_knn.plotAccuracy()
 """
 Après avoir fait l'entrainement, nous évaluons notre modèle sur 
 les données d'entrainement.

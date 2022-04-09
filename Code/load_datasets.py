@@ -1,6 +1,9 @@
 import numpy as np
-import random
 import math
+
+def NormalizeData(data):
+    return (data - np.min(data)) / (np.max(data) - np.min(data))
+
 
 def load_iris_dataset(train_ratio):
     """Cette fonction a pour but de lire le dataset Iris
@@ -27,7 +30,7 @@ def load_iris_dataset(train_ratio):
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
     
-    random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
     
     # Vous pouvez utiliser des valeurs numériques pour les différents types de classes, tel que :
     conversion_labels = {'Iris-setosa': 0, 'Iris-versicolor' : 1, 'Iris-virginica' : 2}
@@ -43,6 +46,9 @@ def load_iris_dataset(train_ratio):
     labels=np.array([conversion_labels[line[-1]] for line in lines], dtype=int)
     nrow = len(data)
     indices = np.arange(nrow)
+
+    # on normalise les données pour plus de précision 
+    data = NormalizeData(data)
 
 	  # les exemples sont ordonnés dans le fichier du dataset, ils sont ordonnés par type de fleur
     # on utilise donc la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
@@ -81,7 +87,7 @@ def load_wine_dataset(train_ratio):
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
     
-    random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
 
     # Le fichier du dataset est dans le dossier datasets en attaché 
     f = open('datasets/binary-winequality-white.csv', 'r')
@@ -89,6 +95,10 @@ def load_wine_dataset(train_ratio):
     f.close()
     lines = [line.split(",") for line in lines if line]
     data=np.array([line[:-1] for line in lines], dtype=float)
+
+    # on normalise les données pour plus de précision 
+    data = NormalizeData(data)
+
     # l'étiquette à prédire est la dernière colonne
     labels=np.array([line[-1] for line in lines], dtype=int)
     nrow = len(data)
@@ -126,7 +136,7 @@ def load_abalone_dataset(train_ratio):
         - test_labels : contient les étiquettes pour chaque exemple dans test, de telle sorte
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
-    random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
     f = open('datasets/abalone-intervalles.csv', 'r') 
     lines = [line.strip() for line in f.readlines()]
     f.close()
@@ -136,6 +146,9 @@ def load_abalone_dataset(train_ratio):
     for line in lines : # on convertit les strings en integer
       line[0] = conversion_sexe[line[0]]
     data=np.array([line[:-1] for line in lines], dtype=float)
+
+    # on normalise les données pour plus de précision 
+    data = NormalizeData(data)
 
     # l'étiquette à prédire est la dernière colonne
     labels=np.array([line[-1] for line in lines], dtype=float)
