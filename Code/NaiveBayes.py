@@ -10,12 +10,11 @@ se fera en utilisant les méthodes train, predict et evaluate de votre code.
 
 import numpy as np
 import metrics
+import math
 
-# le nom de votre classe
 # BayesNaif pour le modèle bayesien naif
-# Knn pour le modèle des k plus proches voisins
 
-class Classifier: #nom de la class à changer
+class BayesNaif:
 
 	def __init__(self, **kwargs):
 		"""
@@ -33,18 +32,25 @@ class Classifier: #nom de la class à changer
 		m : le mobre d'attribus (le nombre de caractéristiques)
 		
 		train_labels : est une matrice numpy de taille nx1
-		
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
-		
 		"""
+		# on sépare le jeu de données train par classe
+		self.separateByClass(train, train_labels)
+		self.meanAndStd()
         
 	def predict(self, x):
 		"""
 		Prédire la classe d'un exemple x donné en entrée
 		exemple est de taille 1xm
 		"""
-        
+		self.calculateClassProbabilities(x)
+		bestClasse, bestProb = None, -1
+		for classe, proba in self.probabilities.items():
+			# on sélectionne la classe avec la probailité la plus grande
+			if bestClasse is None or proba > bestProb:
+				bestProb = proba
+				bestClasse = classe
+		return bestClasse
+
 	def evaluate(self, X, y):
 		"""
 		c'est la méthode qui va evaluer votre modèle sur les données X
@@ -55,4 +61,49 @@ class Classifier: #nom de la class à changer
 		y : est une matrice numpy de taille nx1
 		"""
 		y_pred = np.array([self.predict(x) for x in X])
-		metrics.show_metrics(y, y_pred)
+		metrics.show_metrics(y, y_pred, y)
+
+	def separateByClass(self, train, train_labels):
+		self.separated = {}
+		for i in range(len(train)):
+			vector = train[i]
+			classe = train_labels[i]
+			if (classe not in self.separated):
+				self.separated[classe] = [] # liste vide
+			self.separated[classe].append(vector)
+
+	def meanAndStd(self):
+		self.resume = {}
+		for classe, vecteurs in self.separated.items():
+			# moyenne et écart type de chaque attribut par classe
+			self.resume[classe] = [(np.mean(attribute), np.std(attribute)) for attribute in zip(*vecteurs)]
+
+	def gaussProbability(self, x, mean, std):
+		"""
+		C'est la méthode qui calcule la densité de probabilité d'une distribution normale de x avec
+		mean : la moyenne
+		std : l'écart-type
+		"""
+		exponent = math.exp(-((x-mean)**2/(2*std**2)))
+		return (1/(std*math.sqrt(2*math.pi))*exponent)
+
+	def calculateClassProbabilities(self, inputVector):
+		"""
+		calcule la probabilité 
+		"""
+		self.probabilities = {}
+		for classe, classeMeanStd in self.resume.items():
+			# initialisation à 1
+			self.probabilities[classe] = 1
+			# pour chaque attribut
+			for i in range(len(classeMeanStd)):
+				mean, std = classeMeanStd[i]
+				# attribut 
+				x = inputVector[i]
+				# on utilise la formule de Bayes
+				self.probabilities[classe] *= self.gaussProbability(x, mean, std)
+
+
+
+
+

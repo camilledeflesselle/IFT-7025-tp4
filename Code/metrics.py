@@ -11,14 +11,11 @@ def confusion_matrix_binary(true_labels, predicted_labels, positive = 0, print_v
             else :  fn +=1
         elif pred[i] : fp +=1
         else : vn +=1
-    conf = np.array([[vp, fp],
-                     [fn, vn]])
+    conf = np.array([[vp, fn],
+                     [fp, vn]])
     if print_va :
         print("  * Matrice de confusion :", conf)
-        print('         - Vrais positifs :', vp)
-        print('         - Faux positifs :', fp)
-        print('         - Faux négatifs :', fn)
-        print('         - Vrais négatifs :', vn)
+        print('   Vrais positifs : {} | Faux négatifs : {} \n   Faux positifs : {} | Vrais négatifs : {} '.format(vp, fn, fp, vn))
 
     return conf
 
@@ -38,8 +35,8 @@ def show_metrics(true_labels, predicted_labels, labels):
     for i in np.unique(labels):
         print("\nClasse positive :", i)
         conf = confusion_matrix_binary(true_labels, predicted_labels, i, True)
-        vp, fp = conf[0]
-        fn, vn = conf[1]
+        vp, fn = conf[0]
+        fp, vn = conf[1]
         print("  * Exactitude =", exactitude(vn, fp, fn, vp))
         p = precision(fp, vp)
         r = rappel(fn, vp)
