@@ -128,7 +128,7 @@ class Knn:
 				a) Nous entraînons le modèle sur L-1 échantillons d'entraînement.
 				b) Nous effectuons une prédiction sur l'échantillon de validation restant.
 				c) Nous calculons l'exactitude entre les vrais labels et la prédiction.
-			2-2) Nous calcuons ensuite la moyenne des exactitudes.
+			2-2) Nous calculons ensuite la moyenne des exactitudes.
 		3) Nous choisissons la valeur de K qui maximise la moyenne des exactitudes
 		"""
 		best_kppv = 0
@@ -168,3 +168,4 @@ class Knn:
 
 	def plotAccuracy(self):
 		plt.plot(self.mean_accuracies)
+		plt.show()

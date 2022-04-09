@@ -19,8 +19,8 @@ En gros, vous allez :
 
 # Initialisez vos paramètres
 
-L = 10
-repeat_kfold = 30
+L = 5
+repeat_kfold = 20
 train_ratio = 0.7
 
 
@@ -32,9 +32,9 @@ classif_knn = Knn.Knn()
 # Charger/lire les datasets
 
 # jeu iris
-# train, train_labels, test, test_labels = load_datasets.load_iris_dataset(train_ratio)
+train, train_labels, test, test_labels = load_datasets.load_iris_dataset(train_ratio)
 # jeu wine
-train, train_labels, test, test_labels = load_datasets.load_wine_dataset(train_ratio)
+#train, train_labels, test, test_labels = load_datasets.load_wine_dataset(train_ratio)
 # jeu abalone
 #train, train_labels, test, test_labels = load_datasets.load_abalone_dataset(train_ratio)
 
@@ -45,6 +45,7 @@ classif_knn.getBestKppv(train, train_labels)
 print("Données d'entraînement")
 
 classif_knn.train(train, train_labels)
+classif_knn.plotAccuracy()
 """
 Après avoir fait l'entrainement, nous évaluons notre modèle sur 
 les données d'entrainement.
