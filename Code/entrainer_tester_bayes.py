@@ -34,9 +34,9 @@ classif_NaiveBayes = NaiveBayes.BayesNaif()
 # jeu iris
 #train, train_labels, test, test_labels = load_datasets.load_iris_dataset(train_ratio)
 # jeu wine
-#train, train_labels, test, test_labels = load_datasets.load_wine_dataset(train_ratio)
+train, train_labels, test, test_labels = load_datasets.load_wine_dataset(train_ratio)
 # jeu abalone
-train, train_labels, test, test_labels = load_datasets.load_abalone_dataset(train_ratio)
+#train, train_labels, test, test_labels = load_datasets.load_abalone_dataset(train_ratio)
 
 
 # Entrainez votre classifieur

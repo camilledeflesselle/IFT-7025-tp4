@@ -61,7 +61,7 @@ class BayesNaif:
 		y : est une matrice numpy de taille nx1
 		"""
 		y_pred = np.array([self.predict(x) for x in X])
-		metrics.show_metrics(y, y_pred, y)
+		metrics.show_metrics(y, y_pred)
 
 	def separateByClass(self, train, train_labels):
 		self.separated = {}

@@ -31,8 +31,8 @@ def F1_score(p, r):
 def exactitude(vn, fp, fn, vp):
     return (vn + vp)/(vn + fp + fn + vp)
 
-def show_metrics(true_labels, predicted_labels, labels):
-    for i in np.unique(labels):
+def show_metrics(true_labels, predicted_labels):
+    for i in np.unique(true_labels):
         print("\nClasse positive :", i)
         conf = confusion_matrix_binary(true_labels, predicted_labels, i, True)
         vp, fn = conf[0]

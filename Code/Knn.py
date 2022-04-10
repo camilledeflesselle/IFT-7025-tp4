@@ -115,7 +115,7 @@ class Knn:
 		les expliquer en commentaire
 		"""
 		y_pred = np.array([self.predict(x) for x in X])
-		metrics.show_metrics(y, y_pred, y)
+		metrics.show_metrics(y, y_pred)
 
 	
 	def getBestKppv(self, train, train_labels):
@@ -152,7 +152,7 @@ class Knn:
 				# b) prédiction sur les données de validation
 				valid_pred = np.array([self.predict(valid_row) for valid_row in valid_data])
 				# c) calcul de l'exactitude
-				all_accuracy.append(np.sum([valid_lab[i] == valid_pred[i] for i in range(valid_pred.shape[0])]))
+				all_accuracy.append(np.sum([valid_lab[i] == valid_pred[i] for i in range(valid_lab.shape[0])])/valid_lab.shape[0])
 			# 2-2) moyenne des exactitudes pour un certain k
 			mean_accuracy = np.mean(all_accuracy)
 			self.mean_accuracies.append(mean_accuracy)
@@ -163,8 +163,11 @@ class Knn:
 				best_kppv = k
 		print("best_kppv =", best_kppv)
 		self.k = best_kppv
-		return best_kppv 
 
 	def plotAccuracy(self):
-		plt.plot(self.mean_accuracies)
-		plt.show()
+		plt.plot(range(1, self.repeat_kfold +1), self.mean_accuracies)
+		plt.axvline(x=self.k,color='red',linestyle='--')
+		plt.xlabel('K (nombre de plus proches voisins)')
+		plt.ylabel('Moyenne des exactitudes')
+		plt.savefig('best_kppv_search.png', bbox_inches='tight')
+		#plt.show()
