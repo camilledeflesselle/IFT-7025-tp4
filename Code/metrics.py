@@ -14,8 +14,8 @@ def confusion_matrix_binary(true_labels, predicted_labels, positive = 0, print_v
     conf = np.array([[vp, fn],
                      [fp, vn]])
     if print_va :
-        print("  * Matrice de confusion :", conf)
-        print('   Vrais positifs : {} | Faux négatifs : {} \n   Faux positifs : {} | Vrais négatifs : {} '.format(vp, fn, fp, vn))
+        print("  * Matrice de confusion :")
+        print('   VP : {} | FN : {} \n   FP : {} | VN : {} '.format(vp, fn, fp, vn))
 
     return conf
 
