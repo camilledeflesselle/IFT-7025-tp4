@@ -114,8 +114,8 @@ class Knn:
 		vous pouvez rajouter d'autres arguments, il suffit juste de
 		les expliquer en commentaire
 		"""
-		y_pred = np.array([self.predict(x) for x in X])
-		metrics.show_metrics(y, y_pred)
+		self.predictions = np.array([self.predict(x) for x in X])
+		metrics.show_metrics(y, self.predictions)
 
 	
 	def getBestKppv(self, train, train_labels):
