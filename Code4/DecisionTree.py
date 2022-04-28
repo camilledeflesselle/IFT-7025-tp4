@@ -18,6 +18,70 @@ import pylab
 # le nom de votre classe
 # DecisionTree pour l'arbre de décision
 # NeuralNet pour le réseau de neurones
+def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter = 0.5):
+
+    '''
+    From Joel's answer at https://stackoverflow.com/a/29597209/2966723.  
+    Licensed under Creative Commons Attribution-Share Alike 
+    
+    If the graph is a tree this will return the positions to plot this in a 
+    hierarchical layout.
+    
+    G: the graph (must be a tree)
+    
+    root: the root node of current branch 
+    - if the tree is directed and this is not given, 
+      the root will be found and used
+    - if the tree is directed and this is given, then 
+      the positions will be just for the descendants of this node.
+    - if the tree is undirected and not given, 
+      then a random choice will be used.
+    
+    width: horizontal space allocated for this branch - avoids overlap with other branches
+    
+    vert_gap: gap between levels of hierarchy
+    
+    vert_loc: vertical location of root
+    
+    xcenter: horizontal location of root
+    '''
+    if not nx.is_tree(G):
+        raise TypeError('cannot use hierarchy_pos on a graph that is not a tree')
+
+    if root is None:
+        if isinstance(G, nx.DiGraph):
+            root = next(iter(nx.topological_sort(G)))  #allows back compatibility with nx version 1.11
+        else:
+            root = random.choice(list(G.nodes))
+
+    def _hierarchy_pos(G, root, width=1., vert_gap = 0.5, vert_loc = 0, xcenter = 0.5, pos = None, parent = None):
+        '''
+        see hierarchy_pos docstring for most arguments
+
+        pos: a dict saying where all nodes go if they have been assigned
+        parent: parent of this branch. - only affects it if non-directed
+
+        '''
+    
+        if pos is None:
+            pos = {root:(xcenter,vert_loc)}
+        else:
+            pos[root] = (xcenter, vert_loc)
+        children = list(G.neighbors(root))
+        if not isinstance(G, nx.DiGraph) and parent is not None:
+            children.remove(parent)  
+        if len(children)!=0:
+            dx = width/len(children) 
+            nextx = xcenter - width/2 - dx/2
+            for child in children:
+                nextx += dx
+                pos = _hierarchy_pos(G,child, width = dx, vert_gap = vert_gap, 
+                                    vert_loc = vert_loc-vert_gap, xcenter=nextx,
+                                    pos=pos, parent = root)
+        return pos
+
+            
+    return _hierarchy_pos(G, root, width, vert_gap, vert_loc, xcenter)
 
 class DecisionTree: #nom de la class à changer
 
@@ -29,6 +93,7 @@ class DecisionTree: #nom de la class à changer
 		"""
 		self.index_fact = index_fact
 		self.names = names
+		self.conversion_labels = {'0': 'Iris-setosa', '1' : 'Iris-versicolor', '2' : 'Iris-virginica'}
 
 	def calculateEntropy(self, vector):
 		"""
@@ -125,8 +190,8 @@ class DecisionTree: #nom de la class à changer
 				return decisionSubTree
 			else : # si l'attribut est numérique, l'arbre de décision est fait sur un intervalle
 				#value = np.mean(train[:, racine])
-				questionInf = "{} <= {}".format(self.names[racine], round(best_split_value, 3))
-				questionSup = "{} > {}".format(self.names[racine], round(best_split_value, 3))
+				questionInf = "{} <= {}".format(self.names[racine], round(best_split_value, 2))
+				questionSup = "{} > {}".format(self.names[racine], round(best_split_value, 2))
 				indexInf = np.where(train[:, racine]<=best_split_value)[0]
 				dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
 				labelsInf = train_labels[indexInf]
@@ -199,47 +264,41 @@ class DecisionTree: #nom de la class à changer
 		y_pred = np.array([self.predict(x, decision_tree) for x in X])
 		show_metrics(y, y_pred)
 
-
-	def drawTree1(self, decision_tree):
-		if not isinstance(decision_tree, dict):
-			return decision_tree
-		questions = list(decision_tree.keys())
-		attribute, value = questions[0].split(" <= ")
-		attribute = questions[0]
-		return (attribute, self.drawTree(decision_tree[questions[0]])), (attribute, self.drawTree(decision_tree[questions[1]]))
-
-
-	def drawTree2(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, sep = " <= "):
+	def drawTree2(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
+		index +=1
 		if isinstance(decision_tree, dict):
 			questions = list(decision_tree.keys())
 			currentAttribute, value = questions[0].split(" <= ")
-			currentAttribute = questions[0]
+			currentAttribute = questions[0] + str(index)
 			if oldAttribute != None : 
 				edge = (oldAttribute, currentAttribute)
 				edges.append(edge)
-				edge_labels[edge] = sep + value
+				edge_labels[edge] = sep + olDvalue
 			oldAttribute = currentAttribute
-			edges, edge_labels = self.drawTree2(decision_tree[questions[0]], edges, edge_labels, oldAttribute, " <= ")
-			edges, edge_labels = self.drawTree2(decision_tree[questions[1]], edges, edge_labels, oldAttribute, " > ")
+			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[0]], edges, edge_labels, oldAttribute, value, " <= ", index)
+			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[1]], edges, edge_labels, oldAttribute, value, " > ", index)
 		else :
-			edge = (oldAttribute, decision_tree)
+			edge = (oldAttribute, str(decision_tree) + " + " + str(index))
 			currentAttribute, value = oldAttribute.split(" <= ")
 			edges.append(edge)
 			edge_labels[edge] = sep + value
-		return edges, edge_labels
+		return edges, edge_labels, value, index
+	   
 
 	def drawTree(self, decision_tree):
 		print(decision_tree)
-		edges, edges_labels = self.drawTree2(decision_tree)
+		edges, edges_labels, _, _ = self.drawTree2(decision_tree)
+
 		print(edges)
 		G = nx.DiGraph()
 		G.add_edges_from(edges)
-		pos = nx.spring_layout(G)
-		plt.figure()
+
+		pos = hierarchy_pos(G, edges[0][0], 1, 0.5)
+		plt.figure(figsize = (12, 15))
 		nx.draw(
-			G, pos, edge_color='black', width=1, linewidths=1,
-			node_size=1000, node_color='pink', alpha=0.9,
-			labels={node: node for node in G.nodes()}
+			G, pos, edge_color='black', width=2, linewidths=2,
+			node_size=700, node_color=['green' if node.split(" + ")[0] in ['0', '1', '2'] else 'pink' for node in G.nodes()],
+			labels={node: self.conversion_labels[node.split(" + ")[0]] if node.split(" + ")[0] in ['0', '1', '2'] else node.split(" <= ")[0] for node in G.nodes()}
 		)
 		nx.draw_networkx_edge_labels(
 			G, pos,
@@ -247,5 +306,5 @@ class DecisionTree: #nom de la class à changer
 			font_color='red'
 		)
 		plt.axis('off')
+		plt.savefig("tree_iris.png")
 		plt.show()
-
