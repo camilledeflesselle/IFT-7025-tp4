@@ -31,7 +31,7 @@ test.evaluate(train, train_labels, decision_tree)
 train_ratio = 0.7
 
 # --> 1- Initialisation des classifieurs avec leurs paramètres
-classif_decisionTree_iris = DecisionTree.DecisionTree(index_fact = None)
+classif_decisionTree_iris = DecisionTree.DecisionTree(names = ["Longueur sépale", "Largeur sépale", "Longueur pétale", "Largeur pétale"], index_fact = None)
 classif_decisionTree_wine = DecisionTree.DecisionTree(index_fact = None)
 classif_decisionTree_abalone = DecisionTree.DecisionTree(index_fact = None)
 
@@ -45,7 +45,8 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 # index des variables factorielles
 
-for dataset in ["iris", "wine", "abalone"]:
+#for dataset in ["iris", "wine", "abalone"]:
+for dataset in ["iris"]:
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
@@ -53,9 +54,14 @@ for dataset in ["iris", "wine", "abalone"]:
     classif_decisionTree = eval("classif_decisionTree_"+dataset)
     print("\n######################################\nClassification DecisionTree / Dataset étudié = {}".format(dataset))
 
+    step = np.round(train.shape[0]/100)
+    print(step)
+    #classif_decisionTree.build_learning_curve(train, train_labels, test, test_labels, dataset, step)
+
     # --> Entraînement du classifieur
     tps1 = perf_counter()
-    decision_tree = classif_decisionTree.train(train, train_labels)
+    decision_tree = classif_decisionTree.train(train, train_labels, max_depth = 10)
+    print(classif_decisionTree.drawTree(decision_tree))
     #print(decision_tree)
 
     # --> Evaluation sur les données d'entraînement
@@ -63,10 +69,10 @@ for dataset in ["iris", "wine", "abalone"]:
     #classif_decisionTree.evaluate(train, train_labels, decision_tree)
 
     # --> Evaluation sur les données de test
-    print("\n######################################\nEvaluation sur les données de test")
-    classif_decisionTree.evaluate(test, test_labels, decision_tree)
-    tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
-    print("\nTemps d'exécution :", tps2-tps1)
+   # print("\n######################################\nEvaluation sur les données de test")
+    #classif_decisionTree.evaluate(test, test_labels, decision_tree)
+   # tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
+   # print("\nTemps d'exécution :", tps2-tps1)
 
 
 
