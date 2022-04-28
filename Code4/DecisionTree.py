@@ -17,14 +17,13 @@ from metrics import show_metrics
 
 class DecisionTree: #nom de la class à changer
 
-	def __init__(self, **kwargs):
+	def __init__(self, index_fact = None, **kwargs):
 		"""
 		C'est un Initializer. 
 		Vous pouvez passer d'autre paramètres au besoin,
 		c'est à vous d'utiliser vos propres notations
 		"""
-		self.namesAtt = ["att"]
-		self.typeAtt = ["factor", "factor"]
+		self.index_fact = index_fact
 
 	def calculateEntropy(self, vector):
 		"""
@@ -83,16 +82,31 @@ class DecisionTree: #nom de la class à changer
 		else :
 			current_depth += 1
 			racine = self.determineBestColumn(train, train_labels)
-			uniquesValuesRacine = np.unique(train[:, racine])
 			decisionSubTree = {}
-			for value in uniquesValuesRacine :
-				question = "Attribut {} == {}".format(racine, value)
-				index = np.where(train[:, racine]==value)[0]
-				dataB = train[index]  # classes des individus dont la valeur de l'attribut est i
-				indexB = train_labels[index]
-				yesAnswer = self.train(dataB, indexB, current_depth, max_depth)
-				decisionSubTree[question] = yesAnswer
-			return decisionSubTree
+			if self.index_fact !=None and racine in self.index_fact : # si l'attribut est de type factoriel 
+				uniquesValuesRacine = np.unique(train[:, racine])
+				for value in uniquesValuesRacine :
+					question = "Attribut {} == {}".format(racine, value)
+					index = np.where(train[:, racine]==value)[0]
+					dataB = train[index, :]  # classes des individus dont la valeur de l'attribut est i
+					labelsB = train_labels[index]
+					yesAnswer = self.train(dataB, labelsB, current_depth, max_depth)
+					decisionSubTree[question] = yesAnswer
+				return decisionSubTree
+			else : # si l'attribut est numérique, l'arbre de décision est fait sur un intervalle
+				value = np.mean(train[:, racine])
+				questionInf = "Attribut {} <= {}".format(racine, value)
+				questionSup = "Attribut {} > {}".format(racine, value)
+				indexInf = np.where(train[:, racine]<=value)[0]
+				dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
+				labelsInf = train_labels[indexInf]
+				decisionSubTree[questionInf] = self.train(dataInf, labelsInf, current_depth, max_depth)
+
+				indexSup = np.where(train[:, racine]>value)[0]
+				dataSup = train[indexSup, :]  # classes des individus dont la valeur de l'attribut est i
+				labelsSup = train_labels[indexSup]
+				decisionSubTree[questionSup] = self.train(dataSup, labelsSup, current_depth, max_depth)
+				return decisionSubTree
     
 	def separate_att(self, question):
 		attribute, value = question.split(" == ")
@@ -106,10 +120,21 @@ class DecisionTree: #nom de la class à changer
 		"""
 		if not isinstance(decision_tree, dict):
 			return decision_tree
+		
 		questions = list(decision_tree.keys())
-		list_map = np.array([self.separate_att(question) for question in questions])
-		index = np.where(list_map[:, 1] == x[list_map[0, 0]])[0][0]
-		answer = decision_tree[questions[index]]
+		if self.index_fact !=None and list_map[0, 0] in self.index_fact : 
+			list_map = np.array([self.separate_att(question) for question in questions])
+			index = np.where(list_map[:, 1] == x[list_map[0, 0]])[0][0]
+			answer = decision_tree[questions[index]]
+		else :
+			question = questions[0]
+			attribute, value = question.split(" <= ")
+			_, attribute = attribute.split(" ")
+			
+			if x[int(attribute)] <= float(value):
+				answer = decision_tree[question]
+			else:
+				answer = decision_tree[questions[1]]
 		return self.predict(x, answer)
 		
         

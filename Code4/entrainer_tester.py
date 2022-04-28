@@ -31,9 +31,9 @@ test.evaluate(train, train_labels, decision_tree)
 train_ratio = 0.7
 
 # --> 1- Initialisation des classifieurs avec leurs paramètres
-classif_decisionTree_iris = DecisionTree.DecisionTree()
-classif_decisionTree_wine = DecisionTree.DecisionTree()
-classif_decisionTree_abalone = DecisionTree.DecisionTree()
+classif_decisionTree_iris = DecisionTree.DecisionTree(index_fact = None)
+classif_decisionTree_wine = DecisionTree.DecisionTree(index_fact = None)
+classif_decisionTree_abalone = DecisionTree.DecisionTree(index_fact = None)
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
@@ -43,7 +43,9 @@ wine = load_datasets.load_wine_dataset(train_ratio)
 # 3) jeu abalone
 abalone = load_datasets.load_abalone_dataset(train_ratio)
 
-for dataset in ["iris"]:
+# index des variables factorielles
+
+for dataset in ["iris", "wine", "abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
@@ -54,11 +56,11 @@ for dataset in ["iris"]:
     # --> Entraînement du classifieur
     tps1 = perf_counter()
     decision_tree = classif_decisionTree.train(train, train_labels)
-    print(decision_tree)
+    #print(decision_tree)
 
     # --> Evaluation sur les données d'entraînement
-    print("\n######################################\nEvaluation sur les données d'entraînement")
-    classif_decisionTree.evaluate(train, train_labels, decision_tree)
+    #print("\n######################################\nEvaluation sur les données d'entraînement")
+    #classif_decisionTree.evaluate(train, train_labels, decision_tree)
 
     # --> Evaluation sur les données de test
     print("\n######################################\nEvaluation sur les données de test")
