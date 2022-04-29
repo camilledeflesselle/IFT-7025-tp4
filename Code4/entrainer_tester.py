@@ -38,50 +38,48 @@ classif_decisionTree_abalone = DecisionTree.DecisionTree(names = ["Sexe", "Longu
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
-#iris = load_datasets.load_iris_dataset(train_ratio, seed)
+iris = load_datasets.load_iris_dataset(train_ratio)
 # 2) jeu wine
-#wine = load_datasets.load_wine_dataset(train_ratio)
+wine = load_datasets.load_wine_dataset(train_ratio)
 # 3) jeu abalone
-#abalone = load_datasets.load_abalone_dataset(train_ratio)
+abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 # index des variables factorielles
 
 #for dataset in ["abalone"]:
 #for dataset in ["iris", "wine", "abalone"]:
-dataset = "wine"
-list_acc, list_size = [], []
-for seed in range(5):
-    wine = load_datasets.load_wine_dataset(train_ratio, seed)
+for dataset in ["iris", "wine", "abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
-    ############################################################################
-    # DecisionTree
-    ############################################################################
-    classif_decisionTree = eval("classif_decisionTree_"+dataset)
-    print(seed)
-    print("\n######################################\nClassification DecisionTree / Dataset étudié = {}".format(dataset))
+    list_acc, list_size = [], []
+    for seed in range(20):
+        ############################################################################
+        # DecisionTree
+        ############################################################################
+        classif_decisionTree = eval("classif_decisionTree_"+dataset)
 
-    step = np.round(train.shape[0]/100)
-    print(step)
-    # --> Entraînement du classifieur
-    #tps1 = perf_counter()
-    #decision_tree = classif_decisionTree.train(train, train_labels, max_depth =20)
-    #if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset)
-    #print(decision_tree)
+        train, train_labels = train[0:100],  train_labels[0:100]
+        print("\n######################################\nClassification DecisionTree / Dataset étudié = {}".format(dataset))
+        print(seed)
+        # --> Entraînement du classifieur
+        #tps1 = perf_counter()
+        #decision_tree = classif_decisionTree.train(train, train_labels, max_depth =20)
+        #if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset)
+        #print(decision_tree)
 
-    acc, size = classif_decisionTree.build_learning_curve(train, train_labels, test, test_labels, int(step))
-    list_acc.append(acc)
-    list_size.append(size)
-    # --> Evaluation sur les données d'entraînement
-    #print("\n######################################\nEvaluation sur les données d'entraînement")
-    #classif_decisionTree.evaluate(train, train_labels, decision_tree)
+        acc, size = classif_decisionTree.build_learning_curve(train, train_labels, seed)
+        list_acc.append(acc)
+        list_size.append(size)
+        # --> Evaluation sur les données d'entraînement
+        #print("\n######################################\nEvaluation sur les données d'entraînement")
+        #classif_decisionTree.evaluate(train, train_labels, decision_tree)
 
-    # --> Evaluation sur les données de test
-    #print("\n######################################\nEvaluation sur les données de test")
-    #classif_decisionTree.evaluate(test, test_labels, decision_tree)
-    #tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
-    #print("\nTemps d'exécution :", tps2-tps1)
+        # --> Evaluation sur les données de test
+        #print("\n######################################\nEvaluation sur les données de test")
+        #classif_decisionTree.evaluate(test, test_labels, decision_tree)
+        #tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
+        #print("\nTemps d'exécution :", tps2-tps1)
 
-classif_decisionTree.show_learning_curve(list_acc, list_size, dataset)
+    classif_decisionTree.show_learning_curve(list_acc, list_size, dataset)
 
 
 
