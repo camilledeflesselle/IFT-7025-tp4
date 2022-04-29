@@ -1,4 +1,3 @@
-from ctypes import sizeof
 import numpy as np
 import sys
 import load_datasets
@@ -38,7 +37,6 @@ classif_decisionTree_abalone = DecisionTree.DecisionTree(names = ["Sexe", "Longu
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
-#iris = load_datasets.load_iris_dataset(train_ratio, seed)
 # 2) jeu wine
 #wine = load_datasets.load_wine_dataset(train_ratio)
 # 3) jeu abalone
@@ -48,16 +46,15 @@ classif_decisionTree_abalone = DecisionTree.DecisionTree(names = ["Sexe", "Longu
 
 #for dataset in ["abalone"]:
 #for dataset in ["iris", "wine", "abalone"]:
-dataset = "wine"
+dataset = "iris"
 list_acc, list_size = [], []
-for seed in range(5):
-    wine = load_datasets.load_wine_dataset(train_ratio, seed)
+for seed in range(20):
+    iris = load_datasets.load_iris_dataset(train_ratio, seed)
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
     ############################################################################
     classif_decisionTree = eval("classif_decisionTree_"+dataset)
-    print(seed)
     print("\n######################################\nClassification DecisionTree / Dataset étudié = {}".format(dataset))
 
     step = np.round(train.shape[0]/100)
@@ -68,9 +65,8 @@ for seed in range(5):
     #if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset)
     #print(decision_tree)
 
-    acc, size = classif_decisionTree.build_learning_curve(train, train_labels, test, test_labels, int(step))
-    list_acc.append(acc)
-    list_size.append(size)
+    acc, size = classif_decisionTree.build_learning_curve(train, train_labels, test, test_labels, dataset, step)
+    list_acc.append()
     # --> Evaluation sur les données d'entraînement
     #print("\n######################################\nEvaluation sur les données d'entraînement")
     #classif_decisionTree.evaluate(train, train_labels, decision_tree)
@@ -81,7 +77,6 @@ for seed in range(5):
     #tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     #print("\nTemps d'exécution :", tps2-tps1)
 
-classif_decisionTree.show_learning_curve(list_acc, list_size, dataset)
 
 
 

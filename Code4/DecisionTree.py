@@ -54,7 +54,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
         else:
             root = random.choice(list(G.nodes))
 
-    def _hierarchy_pos(G, root, width=1., vert_gap = 0.5, vert_loc = 0, xcenter = 0.5, pos = None, parent = None):
+    def _hierarchy_pos(G, root, width=1, vert_gap = 10, vert_loc = 0, xcenter = 0, pos = None, parent = None):
         '''
         see hierarchy_pos docstring for most arguments
 
@@ -71,8 +71,8 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
         if not isinstance(G, nx.DiGraph) and parent is not None:
             children.remove(parent)  
         if len(children)!=0:
-            dx = width/len(children) 
-            nextx = xcenter - width/2 - dx/2
+            dx = width/len(children) *2
+            nextx = xcenter - width- dx/2
             for child in children:
                 nextx += dx
                 pos = _hierarchy_pos(G,child, width = dx, vert_gap = vert_gap, 
@@ -85,7 +85,7 @@ def hierarchy_pos(G, root=None, width=1., vert_gap = 0.2, vert_loc = 0, xcenter 
 
 class DecisionTree: #nom de la class à changer
 
-	def __init__(self, names = None, index_fact = None, **kwargs):
+	def __init__(self, names = None, index_fact = None, conversion_labels = None, **kwargs):
 		"""
 		C'est un Initializer. 
 		Vous pouvez passer d'autre paramètres au besoin,
@@ -93,7 +93,7 @@ class DecisionTree: #nom de la class à changer
 		"""
 		self.index_fact = index_fact
 		self.names = names
-		self.conversion_labels = {'0': 'Iris-setosa', '1' : 'Iris-versicolor', '2' : 'Iris-virginica'}
+		self.conversion_labels = conversion_labels
 
 	def calculateEntropy(self, vector):
 		"""
@@ -181,7 +181,7 @@ class DecisionTree: #nom de la class à changer
 			if self.index_fact !=None and racine in self.index_fact : # si l'attribut est de type factoriel 
 				uniquesValuesRacine = np.unique(train[:, racine])
 				for value in uniquesValuesRacine :
-					question = "Attribut {} == {}".format(self.names[racine], value)
+					question = "{} == {}".format(self.names[racine], value)
 					index = np.where(train[:, racine]==value)[0]
 					dataB = train[index, :]  # classes des individus dont la valeur de l'attribut est i
 					labelsB = train_labels[index]
@@ -190,8 +190,8 @@ class DecisionTree: #nom de la class à changer
 				return decisionSubTree
 			else : # si l'attribut est numérique, l'arbre de décision est fait sur un intervalle
 				#value = np.mean(train[:, racine])
-				questionInf = "{} <= {}".format(self.names[racine], round(best_split_value, 2))
-				questionSup = "{} > {}".format(self.names[racine], round(best_split_value, 2))
+				questionInf = "{} <= {}".format(self.names[racine], best_split_value)
+				questionSup = "{} > {}".format(self.names[racine], best_split_value)
 				indexInf = np.where(train[:, racine]<=best_split_value)[0]
 				dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
 				labelsInf = train_labels[indexInf]
@@ -204,9 +204,13 @@ class DecisionTree: #nom de la class à changer
 				return decisionSubTree
     
 	def separate_att(self, question, sep = " == "):
-		attribute, value = question.split(sep)
-		_, attributeIndex = attribute.split(" ")
-		return [int(attributeIndex), float(value)]
+		if len(question.split(sep)) > 1: 
+			attribute, value = question.split(sep)
+		else : 
+			return None
+		index = [i==attribute for i in self.names]
+		attribute = np.where(index)[0]
+		return [int(attribute), float(value)]
 
 	def predict(self, x, decision_tree):
 		"""
@@ -217,37 +221,45 @@ class DecisionTree: #nom de la class à changer
 			return decision_tree
 		
 		questions = list(decision_tree.keys())
-		if self.index_fact !=None and list_map[0, 0] in self.index_fact : 
-			list_map = np.array([self.separate_att(question) for question in questions])
-			index = np.where(list_map[:, 1] == x[list_map[0, 0]])[0][0]
+		list_map = np.array([self.separate_att(question) for question in questions])
+		if self.index_fact !=None and list_map.all() !=None : 
+			index = np.where(list_map[:, 1]==float(x[int(list_map[0, 0])]))
+			print(x)
+			print(index)
+			index = index[0][0]
 			answer = decision_tree[questions[index]]
 		else :
 			question = questions[0]
 			attribute, value = question.split(" <= ")
-			_, attribute = attribute.split(" ")
-			
+			index = [i==attribute for i in self.names]
+			attribute = np.where(index)[0]
 			if x[int(attribute)] <= float(value):
 				answer = decision_tree[question]
 			else:
 				answer = decision_tree[questions[1]]
 		return self.predict(x, answer)
 	
-	def build_learning_curve(self, train, train_labels, test, test_labels, dataset, step):
+	def build_learning_curve(self, train, train_labels, test, test_labels, step):
 		size = []
 		acc = []
-		for nb_instances in range(1, train.shape[0]+1):
+		for nb_instances in range(1, train.shape[0]+1, step):
 			decision_tree = self.train(train[0:nb_instances, :], train_labels[0:nb_instances])
 			y_pred = np.array([self.predict(x, decision_tree) for x in test])
 			correct_pred = y_pred == test_labels
 			accuracy = np.mean(correct_pred)
 			size.append(nb_instances)
 			acc.append(accuracy)
+		return acc, size
+
+	def show_learning_curve(self, list_acc, list_size, dataset)	:
+		size = np.mean(list_size, axis = 0)
+		acc = np.mean(list_acc, axis = 0)
 		plt.figure()
 		plt.plot(size, acc)
-		plt.xlabel("Training set size")
-		plt.ylabel("Proportion correct on test set")
+		plt.xlabel("Taille du jeu d'entraînement")
+		plt.ylabel("Exactitude sur les données test")
 
-		plt.savefig("learning_curve_{}.png".format(dataset))
+		plt.savefig("learning_curve_20_seed_{}.png".format(dataset))
 		#plt.show()
 
 
@@ -273,7 +285,7 @@ class DecisionTree: #nom de la class à changer
 			if oldAttribute != None : 
 				edge = (oldAttribute, currentAttribute)
 				edges.append(edge)
-				edge_labels[edge] = sep + olDvalue
+				edge_labels[edge] = sep + str(round(float(olDvalue), 2))
 			oldAttribute = currentAttribute
 			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[0]], edges, edge_labels, oldAttribute, value, " <= ", index)
 			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[1]], edges, edge_labels, oldAttribute, value, " > ", index)
@@ -281,11 +293,11 @@ class DecisionTree: #nom de la class à changer
 			edge = (oldAttribute, str(decision_tree) + " + " + str(index))
 			currentAttribute, value = oldAttribute.split(" <= ")
 			edges.append(edge)
-			edge_labels[edge] = sep + value
+			edge_labels[edge] = sep + str(round(float(value), 2))
 		return edges, edge_labels, value, index
 	   
 
-	def drawTree(self, decision_tree):
+	def drawTree(self, decision_tree, dataset):
 		print(decision_tree)
 		edges, edges_labels, _, _ = self.drawTree2(decision_tree)
 
@@ -293,18 +305,27 @@ class DecisionTree: #nom de la class à changer
 		G = nx.DiGraph()
 		G.add_edges_from(edges)
 
-		pos = hierarchy_pos(G, edges[0][0], 1, 0.5)
-		plt.figure(figsize = (12, 15))
-		nx.draw(
-			G, pos, edge_color='black', width=2, linewidths=2,
-			node_size=700, node_color=['green' if node.split(" + ")[0] in ['0', '1', '2'] else 'pink' for node in G.nodes()],
-			labels={node: self.conversion_labels[node.split(" + ")[0]] if node.split(" + ")[0] in ['0', '1', '2'] else node.split(" <= ")[0] for node in G.nodes()}
-		)
+		pos = hierarchy_pos(G, edges[0][0])
+		#pos = nx.spring_layout(G)
+		plt.figure(figsize = (12, 12))
+		if dataset == "iris":
+			nx.draw(
+				G, pos, edge_color='black', width=2, linewidths=2, font_size = 15,
+				node_size=7000, node_color=['green' if node.split(" + ")[0] in ['0', '1', '2'] else 'pink' for node in G.nodes()],
+				labels={node: self.conversion_labels[node.split(" + ")[0]] if node.split(" + ")[0] in ['0', '1', '2'] else node.split(" <= ")[0] for node in G.nodes()}
+			)
+		else :
+			nx.draw(
+				G, pos, edge_color='black', width=2, linewidths=2,
+				node_size=700, node_color='pink',
+				labels={node: node.split(" <= ")[0] for node in G.nodes()}
+			)
 		nx.draw_networkx_edge_labels(
 			G, pos,
 			edge_labels=edges_labels,
-			font_color='red'
+			font_color='red',
+			font_size = 15
 		)
 		plt.axis('off')
-		plt.savefig("tree_iris.png")
-		plt.show()
+		plt.savefig("tree_big_{}.png".format(dataset))
+		#plt.show()

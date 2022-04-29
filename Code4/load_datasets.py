@@ -5,7 +5,7 @@ def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
 
 
-def load_iris_dataset(train_ratio):
+def load_iris_dataset(train_ratio, seed=1):
     """Cette fonction a pour but de lire le dataset Iris
 
     Args:
@@ -30,7 +30,7 @@ def load_iris_dataset(train_ratio):
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
     
-    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(seed) # Pour avoir les meme nombres aléatoires à chaque initialisation.
     
     # Vous pouvez utiliser des valeurs numériques pour les différents types de classes, tel que :
     conversion_labels = {'Iris-setosa': 0, 'Iris-versicolor' : 1, 'Iris-virginica' : 2}
@@ -48,7 +48,7 @@ def load_iris_dataset(train_ratio):
     indices = np.arange(nrow)
 
     # on normalise les données pour plus de précision 
-    data = NormalizeData(data)
+    #data = NormalizeData(data)
 
 	  # les exemples sont ordonnés dans le fichier du dataset, ils sont ordonnés par type de fleur
     # on utilise donc la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
@@ -64,7 +64,7 @@ def load_iris_dataset(train_ratio):
     return (train, train_labels, test, test_labels)
 	
 	
-def load_wine_dataset(train_ratio):
+def load_wine_dataset(train_ratio, seed=1):
     """Cette fonction a pour but de lire le dataset Binary Wine quality
 
     Args:
@@ -87,7 +87,7 @@ def load_wine_dataset(train_ratio):
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
     
-    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(seed) # Pour avoir les meme nombres aléatoires à chaque initialisation.
 
     # Le fichier du dataset est dans le dossier datasets en attaché 
     f = open('datasets/binary-winequality-white.csv', 'r')
@@ -113,7 +113,7 @@ def load_wine_dataset(train_ratio):
 	# La fonction retourne 4 structures de données de type Numpy.
     return (train, train_labels, test, test_labels)
 
-def load_abalone_dataset(train_ratio):
+def load_abalone_dataset(train_ratio, seed=1):
     """
     Cette fonction a pour but de lire le dataset Abalone-intervalles
 
@@ -136,7 +136,7 @@ def load_abalone_dataset(train_ratio):
         - test_labels : contient les étiquettes pour chaque exemple dans test, de telle sorte
           que : test_labels[i] est l'etiquette pour l'exemple test[i]
     """
-    np.random.seed(1) # Pour avoir les meme nombres aléatoires à chaque initialisation.
+    np.random.seed(seed) # Pour avoir les meme nombres aléatoires à chaque initialisation.
     f = open('datasets/abalone-intervalles.csv', 'r') 
     lines = [line.strip() for line in f.readlines()]
     f.close()
