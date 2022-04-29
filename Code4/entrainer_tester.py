@@ -48,7 +48,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 #for dataset in ["abalone"]:
 #for dataset in ["iris", "wine", "abalone"]:
-for dataset in ["iris", "wine", "abalone"]:
+for dataset in ["wine", "abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
     list_acc, list_size = [], []
     for seed in range(20):
@@ -66,7 +66,7 @@ for dataset in ["iris", "wine", "abalone"]:
         #if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset)
         #print(decision_tree)
 
-        acc, size = classif_decisionTree.build_learning_curve(train, train_labels, seed)
+        acc, size = classif_decisionTree.build_learning_curve(train, train_labels, seed, True)
         list_acc.append(acc)
         list_size.append(size)
         # --> Evaluation sur les données d'entraînement

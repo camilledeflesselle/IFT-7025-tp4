@@ -142,7 +142,7 @@ class DecisionTree: #nom de la class à changer
 		_, columns = data.shape
 		for column in range(columns):
 			values = data[:, column]
-			uniqueValues = np.unique(values)
+			uniqueValues = np.unique(values) # uniques valeurs
 			if len(uniqueValues) == 1:
 				potentialSplits[column] = uniqueValues
 			else:
@@ -151,7 +151,7 @@ class DecisionTree: #nom de la class à changer
 					if i != 0:
 						currentValue = uniqueValues[i]
 						previousValue = uniqueValues[i - 1]
-						potentialSplits[column].append((currentValue + previousValue) / 2)
+						potentialSplits[column].append((currentValue + previousValue) / 2) # on prend la médiane comme potentielle coupe
 		return potentialSplits
 
 
@@ -253,7 +253,7 @@ class DecisionTree: #nom de la class à changer
 		y_pred = np.array([self.predict(x, decision_tree) for x in X])
 		show_metrics(y, y_pred)
 
-	def build_learning_curve(self, train, train_labels, seed):
+	def build_learning_curve(self, train, train_labels, seed, do_pruning = False):
 		size = []
 		acc = []
 		np.random.seed(seed) 
@@ -261,12 +261,14 @@ class DecisionTree: #nom de la class à changer
 		np.random.shuffle(indices)
 		train = train[indices]
 		train_labels = train_labels[indices]
-		for nb_instances in range(1, 100):
-			train_used = train[0:nb_instances]
+		for nb_instances in range(10, 100):
+			train_used = train[0:nb_instances,:]
 			labels_train = train_labels[0:nb_instances]
-			test_used = train[nb_instances:100]
+			test_used = train[nb_instances:100,:]
 			labels_test = train_labels[nb_instances:100]
 			decision_tree = self.train(train_used, labels_train)
+			if do_pruning :
+				decision_tree = self.pruningTree(decision_tree, train_used, labels_train)
 			y_pred = np.array([self.predict(x, decision_tree) for x in test_used])
 			correct_pred = y_pred == labels_test
 			accuracy = np.mean(correct_pred)
@@ -283,7 +285,7 @@ class DecisionTree: #nom de la class à changer
 		plt.xlabel("Taille du jeu d'entraînement")
 		plt.ylabel("Exactitude sur les données test")
 
-		plt.savefig("learning_curve_20_seed_100_{}.png".format(dataset))
+		plt.savefig("learning_curve_pruned_{}.png".format(dataset))
 		#plt.show()
 
 	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
@@ -308,13 +310,14 @@ class DecisionTree: #nom de la class à changer
 	   
 
 	def drawTree(self, decision_tree, dataset, name="big"):
+
+		plt.figure(figsize = (12, 12))
 		edges, edges_labels, _, _ = self.extractEdgesFromTree(decision_tree)
 		G = nx.DiGraph()
 		G.add_edges_from(edges)
 
 		pos = hierarchy_pos(G, edges[0][0])
 		#pos = nx.spring_layout(G)
-		plt.figure(figsize = (12, 12))
 		if dataset == "iris":
 			nx.draw(
 				G, pos, edge_color='black', width=2, linewidths=2, font_size = 15,
@@ -337,7 +340,7 @@ class DecisionTree: #nom de la class à changer
 		plt.savefig("tree_{}_{}.png".format(name, dataset))
 		#plt.show()
 
-	def pruningLeaves(self, decision_tree, data):
+	def pruningLeaves(self, decision_tree, data, labels):
 		"""takes decision tree as parameter and returns a pruned tree based on chi square
 			params:
 				obj (dict):
@@ -360,8 +363,22 @@ class DecisionTree: #nom de la class à changer
 			return 'pruned'
 
 		if not isLeaf:
-			if self.pruningLeaves(decision_tree[parent], data):
-				decision_tree[parent] = None
+			sep = ' <= '
+			question = parent.split(sep)
+			if len(question)<2 : 
+				sep = " > "
+				question = parent.split(sep)
+			if len(question)<2 : 
+				sep = " == "
+				question = parent.split(' == ')
+				print(question)
+			attribute, value = question[0], question[1]
+			attribute = np.where([i == attribute for i in self.names])[0][0]
+			indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
+			labels = labels[indexCorrect]
+			data = data[indexCorrect,:]
+			if self.pruningLeaves(decision_tree[parent], data, labels):
+				decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
 
 		return decision_tree
 
@@ -378,23 +395,16 @@ class DecisionTree: #nom de la class à changer
 
 		for i in range(data.shape[1]):
 			contengency = pd.crosstab(data[:, i], labels)
-			print(contengency)
 			c, p, dof, expected = chi2_contingency(contengency)
 			if c > chi2.isf(q=alpha, df=dof):
 				self.satisfied_attributes.append(self.names[i])
 
-		print(self.satisfied_attributes)
-		print('\nArbre de décision avant élaguage-\n')
-		print(decision_tree)
-
-		print('\nArbre de décision après élaguage-\n')
 		pruned = True
-		while pruned:
+		while pruned and decision_tree != "pruned":
 			#keep pruning till leaf nodes can be pruned or till whole tree has been pruned
 			pruned = False
-			decision_tree = self.pruningLeaves(decision_tree, data)
+			decision_tree = self.pruningLeaves(decision_tree, data, labels)
 			if decision_tree == 'pruned':
 				break
-		print(decision_tree)
-
+		#print(decision_tree)
 		return decision_tree
