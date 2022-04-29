@@ -13,7 +13,8 @@ from metrics import show_metrics
 import matplotlib.pyplot as plt
 import networkx as nx
 import pylab
-
+from scipy.stats import chi2, chi2_contingency
+import pandas as pd
 
 # le nom de votre classe
 # DecisionTree pour l'arbre de décision
@@ -224,8 +225,8 @@ class DecisionTree: #nom de la class à changer
 		list_map = np.array([self.separate_att(question) for question in questions])
 		if self.index_fact !=None and list_map.all() !=None : 
 			index = np.where(list_map[:, 1]==float(x[int(list_map[0, 0])]))
-			print(x)
-			print(index)
+			#print(x)
+			#print(index)
 			index = index[0][0]
 			answer = decision_tree[questions[index]]
 		else :
@@ -239,6 +240,19 @@ class DecisionTree: #nom de la class à changer
 				answer = decision_tree[questions[1]]
 		return self.predict(x, answer)
 	
+	def evaluate(self, X, y, decision_tree):
+		"""
+		c'est la méthode qui va évaluer votre modèle sur les données X
+		l'argument X est une matrice de type Numpy et de taille nxm, avec 
+		n : le nombre d'exemple de test dans le dataset
+		m : le nombre d'attributs (le nombre de caractéristiques)
+		y : est une matrice numpy de taille nx1
+		vous pouvez rajouter d'autres arguments, il suffit juste de
+		les expliquer en commentaire
+		"""
+		y_pred = np.array([self.predict(x, decision_tree) for x in X])
+		show_metrics(y, y_pred)
+
 	def build_learning_curve(self, train, train_labels, seed):
 		size = []
 		acc = []
@@ -272,21 +286,7 @@ class DecisionTree: #nom de la class à changer
 		plt.savefig("learning_curve_20_seed_100_{}.png".format(dataset))
 		#plt.show()
 
-
-	def evaluate(self, X, y, decision_tree):
-		"""
-		c'est la méthode qui va évaluer votre modèle sur les données X
-		l'argument X est une matrice de type Numpy et de taille nxm, avec 
-		n : le nombre d'exemple de test dans le dataset
-		m : le nombre d'attributs (le nombre de caractéristiques)
-		y : est une matrice numpy de taille nx1
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
-		"""
-		y_pred = np.array([self.predict(x, decision_tree) for x in X])
-		show_metrics(y, y_pred)
-
-	def drawTree2(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
+	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
 		index +=1
 		if isinstance(decision_tree, dict):
 			questions = list(decision_tree.keys())
@@ -297,8 +297,8 @@ class DecisionTree: #nom de la class à changer
 				edges.append(edge)
 				edge_labels[edge] = sep + str(round(float(olDvalue), 2))
 			oldAttribute = currentAttribute
-			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[0]], edges, edge_labels, oldAttribute, value, " <= ", index)
-			edges, edge_labels, value, index = self.drawTree2(decision_tree[questions[1]], edges, edge_labels, oldAttribute, value, " > ", index)
+			edges, edge_labels, value, index = self.extractEdgesFromTree(decision_tree[questions[0]], edges, edge_labels, oldAttribute, value, " <= ", index)
+			edges, edge_labels, value, index = self.extractEdgesFromTree(decision_tree[questions[1]], edges, edge_labels, oldAttribute, value, " > ", index)
 		else :
 			edge = (oldAttribute, str(decision_tree) + " + " + str(index))
 			currentAttribute, value = oldAttribute.split(" <= ")
@@ -307,11 +307,8 @@ class DecisionTree: #nom de la class à changer
 		return edges, edge_labels, value, index
 	   
 
-	def drawTree(self, decision_tree, dataset):
-		print(decision_tree)
-		edges, edges_labels, _, _ = self.drawTree2(decision_tree)
-
-		print(edges)
+	def drawTree(self, decision_tree, dataset, name="big"):
+		edges, edges_labels, _, _ = self.extractEdgesFromTree(decision_tree)
 		G = nx.DiGraph()
 		G.add_edges_from(edges)
 
@@ -337,5 +334,67 @@ class DecisionTree: #nom de la class à changer
 			font_size = 15
 		)
 		plt.axis('off')
-		plt.savefig("tree_big_{}.png".format(dataset))
+		plt.savefig("tree_{}_{}.png".format(name, dataset))
 		#plt.show()
+
+	def pruningLeaves(self, decision_tree, data):
+		"""takes decision tree as parameter and returns a pruned tree based on chi square
+			params:
+				obj (dict):
+				obj is a decision tree encoded in the form of decision tree
+			return:
+				obj (dict):
+				obj is decision tree with pruned leaves
+		"""
+		isLeaf = True
+		parent = None
+
+		for key in list(decision_tree.keys()):
+			if isinstance(decision_tree[key], dict):
+				isLeaf = False
+				parent = key
+				break
+		if isLeaf and list(decision_tree.keys())[0].split(' <= ')[0] not in self.satisfied_attributes:
+			global pruned
+			pruned = True
+			return 'pruned'
+
+		if not isLeaf:
+			if self.pruningLeaves(decision_tree[parent], data):
+				decision_tree[parent] = None
+
+		return decision_tree
+
+	def pruningTree(self, decision_tree, data, labels, alpha = 0.05):
+		"""takes decision tree as parameter and returns a pruned tree based on chi square
+			params:
+				obj (dict):
+				obj is a decision tree encoded in the form of decision tree
+			return:
+				obj (dict):
+				obj is decision tree with pruned leaves
+		"""
+		self.satisfied_attributes = []
+
+		for i in range(data.shape[1]):
+			contengency = pd.crosstab(data[:, i], labels)
+			print(contengency)
+			c, p, dof, expected = chi2_contingency(contengency)
+			if c > chi2.isf(q=alpha, df=dof):
+				self.satisfied_attributes.append(self.names[i])
+
+		print(self.satisfied_attributes)
+		print('\nArbre de décision avant élaguage-\n')
+		print(decision_tree)
+
+		print('\nArbre de décision après élaguage-\n')
+		pruned = True
+		while pruned:
+			#keep pruning till leaf nodes can be pruned or till whole tree has been pruned
+			pruned = False
+			decision_tree = self.pruningLeaves(decision_tree, data)
+			if decision_tree == 'pruned':
+				break
+		print(decision_tree)
+
+		return decision_tree

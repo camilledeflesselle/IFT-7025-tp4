@@ -46,7 +46,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 # index des variables factorielles
 
 #for dataset in ["abalone"]:
-for dataset in ["iris", "wine", "abalone"]:
+for dataset in ["wine"]:
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
@@ -61,8 +61,8 @@ for dataset in ["iris", "wine", "abalone"]:
     #print(decision_tree)
 
     # --> Evaluation sur les données d'entraînement
-    print("\n######################################\nEvaluation sur les données d'entraînement")
-    classif_decisionTree.evaluate(train, train_labels, decision_tree)
+    #print("\n######################################\nEvaluation sur les données d'entraînement")
+    #classif_decisionTree.evaluate(train, train_labels, decision_tree)
 
     # --> Evaluation sur les données de test
     print("\n######################################\nEvaluation sur les données de test")
@@ -70,6 +70,20 @@ for dataset in ["iris", "wine", "abalone"]:
     tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     print("\nTemps d'exécution :", tps2-tps1)
 
+    # --> Arbre élagué
+    tps1 = perf_counter()
+    decision_tree = classif_decisionTree.pruningTree(decision_tree, train, train_labels, alpha = 0.05)
+
+    #print("\n######################################\nEvaluation sur les données d'entraînement / arbre élagué")
+    if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset, "elague")
+    #classif_decisionTree.evaluate(train, train_labels, decision_tree)
+
+    # --> Evaluation sur les données de test
+    print("\n######################################\nEvaluation sur les données de test / arbre élagué")
+    classif_decisionTree.evaluate(test, test_labels, decision_tree)
+    tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
+    print("\nTemps d'exécution :", tps2-tps1)
+    """
     # --> Avec sklearn
     model_decisionTree = DecisionTreeClassifier()
     model_decisionTree = model_decisionTree.fit(train, train_labels)
@@ -78,7 +92,7 @@ for dataset in ["iris", "wine", "abalone"]:
     predictions = model_decisionTree.predict(test)
     print("\n######################################\nRésultats sklearn Decision Tree")
     metrics.show_metrics(test_labels, predictions)
-
+    """
 
 
 
