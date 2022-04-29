@@ -48,7 +48,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 #for dataset in ["abalone"]:
 #for dataset in ["iris", "wine", "abalone"]:
-for dataset in ["wine", "abalone"]:
+for dataset in ["iris", "wine", "abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
     list_acc, list_size = [], []
     for seed in range(20):

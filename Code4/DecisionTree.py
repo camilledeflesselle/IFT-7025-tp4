@@ -296,7 +296,7 @@ class DecisionTree: #nom de la class à changer
 		if isLeaf and list(decision_tree.keys())[0].split(' <= ')[0] not in self.satisfied_attributes:
 			global pruned
 			pruned = True
-			return 'pruned'
+			return decision_tree
 
 		if not isLeaf:
 			sep = ' <= '
