@@ -45,7 +45,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 # index des variables factorielles
 
-for dataset in ["wine"]:
+for dataset in ["iris"]:
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
