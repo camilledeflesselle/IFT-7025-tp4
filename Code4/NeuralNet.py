@@ -8,6 +8,7 @@ vous pouvez rajouter d'autres méthodes qui peuvent vous etre utiles, mais la co
 se fera en utilisant les méthodes train, predict et evaluate de votre code.
 """
 
+from operator import indexOf
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -202,27 +203,29 @@ class NeuralNet: #nom de la class à changer
     
 		split = math.floor(train_split * nrow)
 		train_idx,    test_idx    = indices[:split],   indices[split:]
-		x_train,        x_test        = train[train_idx],   train[test_idx]
+		x_train,        x_test        = train[train_idx, :],   train[test_idx, :]
 		y_train, y_test = train_labels[train_idx], train_labels[test_idx]
-
+		print(x_train.shape[0])
 		if tqdm_:
 			epoch_iterator = tqdm(range(epochs))
 		else:
 			epoch_iterator = range(epochs)
 			
 		for e in epoch_iterator:
-			if x_train.shape[1] % batch_size == 0:
-				n_batches = int(x_train.shape[1] / batch_size)
+			if x_train.shape[0] % batch_size == 0:
+				n_batches = int(x_train.shape[0] / batch_size)
 			else:
-				n_batches = int(x_train.shape[1] / batch_size ) - 1
+				n_batches = int(x_train.shape[0] / batch_size ) - 1
 			
-			idx = np.arange(len(y_train))
-			idx = np.random.shuffle(idx)
-			x_train, y_train  = x_train[idx], y_train[idx]
-			
-			batches_x = [x_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-			batches_y = [y_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-			
+			#idx = np.arange(x_train.shape[0])
+			#print(idx)
+			#idx = np.random.shuffle(idx)
+			#x_train= x_train[idx, :]
+			#y_train = y_train[idx]
+			#print(x_train)
+			batches_x = [x_train[batch_size*i:batch_size*(i+1), :] for i in range(0, n_batches)]
+			batches_y = [y_train[batch_size*i:batch_size*(i+1), :] for i in range(0, n_batches)]
+			print(batches_x)
 			train_losses = []
 			train_accuracies = []
 			
@@ -240,14 +243,16 @@ class NeuralNet: #nom de la class à changer
 					dw_per_epoch[i] += dw_i / batch_size
 					db_per_epoch[i] += db_i / batch_size
 					
-				batch_y_train_pred = self.predict(batch_x)
+				batch_y_train_pred = [self.predict(x) for x in batch_x]
 				
 				train_loss = cost_function(batch_y, batch_y_train_pred)
 				train_losses.append(train_loss)
+				print(batch_y)
+				print(batch_y_train_pred)
 				train_accuracy = np.mean(batch_y == batch_y_train_pred)
 				train_accuracies.append(train_accuracy)
 				
-				batch_y_test_pred = self.predict(x_test)
+				batch_y_test_pred = [self.predict(x) for x in x_test]
 				
 				test_loss = cost_function(y_test, batch_y_test_pred)
 				test_losses.append(test_loss)
@@ -260,6 +265,7 @@ class NeuralNet: #nom de la class à changer
 				self.biases[i] = self.biases[i] - learning_rate * db_epoch
 				
 			history_train_losses.append(np.mean(train_losses))
+			print(train_losses)
 			history_train_accuracies.append(np.mean(train_accuracies))
 			
 			history_test_losses.append(np.mean(test_losses))
@@ -320,7 +326,7 @@ class NeuralNet: #nom de la class à changer
 		vous pouvez rajouter d'autres arguments, il suffit juste de
 		les expliquer en commentaire
 		"""
-		y_pred = np.array([self.predict(x) for x in X])
+		y_pred = self.predict(X) 
 		show_metrics(y, y_pred)
 	
 	# Vous pouvez rajouter d'autres méthodes et fonctions,
