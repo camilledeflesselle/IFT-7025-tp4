@@ -206,27 +206,10 @@ class DecisionTree: #nom de la class à changer
 			if isinstance(decision_tree[key], dict):
 				isLeaf = False
 				parent = key
+				break
 		
-				sep = ' <= '
-				question = parent.split(sep)
-				if len(question)<2 : 
-					sep = " > "
-					question = parent.split(sep)
-				if len(question)<2 : 
-					sep = " == "
-					question = parent.split(' == ')
-				attribute, value = question[0], question[1]
-				attribute = np.where([i == attribute for i in self.names])[0][0]
-				indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
-				labels = labels[indexCorrect]
-				data = data[indexCorrect,:]
-				_, do_change, pruned = self.pruningLeaves(decision_tree[parent], data, labels, pruned)
-				if do_change :
-					print("remplacement")
-					decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
-
-		
-		if isLeaf: # si deux feuilles
+		if isLeaf: 
+			# si deux feuilles
 			# calcul de delta à comparer à chi2 pour alpha
 			attribute, value = list(decision_tree.keys())[0].split(' <= ')
 			attributeIndex = np.where([i == attribute for i in self.names])[0][0]
@@ -249,15 +232,35 @@ class DecisionTree: #nom de la class à changer
 
 			# calcul de delta
 			delta = np.sum(np.divide((nb_expected_left-nb_uniques_child_left)**2 , nb_expected_left) + np.divide((nb_expected_right-nb_uniques_child_right)**2 , nb_expected_right) )
-			print(attribute + " <= " + str(value))
-			print("delta", delta)
-			dof = len(labels) - 1
-			print("chi2", chi2.isf(q=alpha, df=dof))
-			if delta > chi2.isf(q=alpha, df=dof): # on fait l'élagage, on rejette l'hypothèse
+			#print(attribute + " <= " + str(value))
+			#print("delta", delta)
+			dof = (len(labels) - 1) * (len(uniques_root)-1)
+			#print("chi2", chi2.isf(q=alpha, df=dof))
+			if delta < chi2.isf(q=alpha, df=dof): # on fait l'élagage, on rejette l'hypothèse
 				do_change = True
 				pruned = True
 				decision_tree = "pruned"
 				print("élagage")
+
+		if not isLeaf:
+			sep = ' <= '
+			question = parent.split(sep)
+			if len(question)<2 : 
+				sep = " > "
+				question = parent.split(sep)
+			if len(question)<2 : 
+				sep = " == "
+				question = parent.split(' == ')
+			attribute, value = question[0], question[1]
+			attribute = np.where([i == attribute for i in self.names])[0][0]
+			indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
+			labels = labels[indexCorrect]
+			data = data[indexCorrect,:]
+			_, do_change, pruned = self.pruningLeaves(decision_tree[parent], data, labels, pruned)
+			if do_change :
+				print("remplacement")
+				decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
+			do_change = False
 
 		return decision_tree, do_change, pruned
 
@@ -274,7 +277,7 @@ class DecisionTree: #nom de la class à changer
 			pruned = True
 			new_decision_tree = decision_tree
 			while pruned and new_decision_tree != "pruned":
-				print("itération")
+				#print("itération")
 				#continue l'élagage tant qu'il est possible ou jusqu'à ce que l'abre soit entièrement élagué 
 				pruned = False
 				new_decision_tree, _, pruned = self.pruningLeaves(decision_tree, data, labels, pruned)
@@ -355,9 +358,9 @@ class DecisionTree: #nom de la class à changer
 			)
 		else :
 			nx.draw(
-				G, pos, edge_color='black', width=2, linewidths=2,
-				node_size=700, node_color='pink',
-				labels={node: node.split(" <= ")[0] for node in G.nodes()}
+				G, pos, edge_color='black', width=2, linewidths=2, font_size = 15,
+				node_size=7000, node_color=['green' if node.split(" + ")[0] in ['0', '1', '2'] else 'pink' for node in G.nodes()],
+				labels={node: node.split(" + ")[0].split(" <= ")[0] for node in G.nodes()}
 			)
 		nx.draw_networkx_edge_labels(
 			G, pos,

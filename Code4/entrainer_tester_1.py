@@ -45,7 +45,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio)
 
 # index des variables factorielles
 
-for dataset in ["iris", "wine", "abalone"]:
+for dataset in ["wine"]:
     train, train_labels, test, test_labels = eval(dataset)
     ############################################################################
     # DecisionTree
@@ -71,7 +71,7 @@ for dataset in ["iris", "wine", "abalone"]:
 
     # --> Arbre élagué
     decision_tree = classif_decisionTree.pruningTree(decision_tree, train, train_labels, alpha = 0.05)
-    if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset, "elague")
+    classif_decisionTree.drawTree(decision_tree, dataset, "elague")
 
     # --> Evaluation sur les données de test
     print("\n######################################\nEvaluation sur les données de test / arbre élagué")
