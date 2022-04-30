@@ -66,7 +66,7 @@ for dataset in ["iris", "wine", "abalone"]:
         #if dataset == "iris" : classif_decisionTree.drawTree(decision_tree, dataset)
         #print(decision_tree)
 
-        acc, size = classif_decisionTree.build_learning_curve(train, train_labels, seed, True)
+        acc, size = classif_decisionTree.build_learning_curve(train, train_labels, seed, do_pruning = True)
         list_acc.append(acc)
         list_size.append(size)
         # --> Evaluation sur les données d'entraînement
@@ -79,7 +79,7 @@ for dataset in ["iris", "wine", "abalone"]:
         #tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
         #print("\nTemps d'exécution :", tps2-tps1)
 
-    classif_decisionTree.show_learning_curve(list_acc, list_size, dataset)
+    classif_decisionTree.show_learning_curve(list_acc, list_size, dataset, do_pruning = True)
 
 
 

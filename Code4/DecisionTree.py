@@ -255,7 +255,7 @@ class DecisionTree: #nom de la class à changer
 			labels = labels[indexCorrect]
 			data = data[indexCorrect,:]
 			if self.pruningLeaves(decision_tree[parent], data, labels) :
-				print("remplacement")
+				#print("remplacement")
 				decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
 
 		return decision_tree
@@ -304,7 +304,7 @@ class DecisionTree: #nom de la class à changer
 			acc.append(accuracy)
 		return acc, size
 
-	def show_learning_curve(self, list_acc, list_size, dataset)	:
+	def show_learning_curve(self, list_acc, list_size, dataset, do_pruning = False)	:
 		size = np.mean(list_size, axis = 0)
 		acc = np.mean(list_acc, axis = 0)
 		print("dernière exactitude", acc[-1])
@@ -313,7 +313,8 @@ class DecisionTree: #nom de la class à changer
 		plt.xlabel("Taille du jeu d'entraînement")
 		plt.ylabel("Exactitude sur les données test")
 
-		plt.savefig("learning_curve_pruned_{}.png".format(dataset))
+		if do_pruning : plt.savefig("learning_curve_pruned_{}.png".format(dataset))
+		else : plt.savefig("learning_curve_{}.png".format(dataset))
 		#plt.show()
 
 	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
