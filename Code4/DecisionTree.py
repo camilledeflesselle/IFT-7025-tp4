@@ -189,7 +189,7 @@ class DecisionTree: #nom de la class à changer
 		y_pred = np.array([self.predict(x, decision_tree) for x in X])
 		show_metrics(y, y_pred)
 
-	def pruningLeaves(self, decision_tree, data, labels, pruned = False, alpha = 0.05):
+	def pruningLeaves(self, decision_tree, data, labels, alpha = 0.05):
 		"""
 		fait l'élagage des noeuds, prend en argument :
 		- decision_tree : un arbre de décision
@@ -201,7 +201,6 @@ class DecisionTree: #nom de la class à changer
 		- un arbre élagué 1 fois en se basant sur chi square
 		"""
 		isLeaf = True
-		do_change = False
 		for key in list(decision_tree.keys()):
 			if isinstance(decision_tree[key], dict):
 				isLeaf = False
@@ -237,10 +236,9 @@ class DecisionTree: #nom de la class à changer
 			dof = (len(labels) - 1) * (len(uniques_root)-1)
 			#print("chi2", chi2.isf(q=alpha, df=dof))
 			if delta < chi2.isf(q=alpha, df=dof): # on fait l'élagage, on rejette l'hypothèse
-				do_change = True
+				global pruned
 				pruned = True
-				decision_tree = "pruned"
-				print("élagage")
+				return "pruned"
 
 		if not isLeaf:
 			sep = ' <= '
@@ -256,13 +254,11 @@ class DecisionTree: #nom de la class à changer
 			indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
 			labels = labels[indexCorrect]
 			data = data[indexCorrect,:]
-			_, do_change, pruned = self.pruningLeaves(decision_tree[parent], data, labels, pruned)
-			if do_change :
+			if self.pruningLeaves(decision_tree[parent], data, labels) :
 				print("remplacement")
 				decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
-			do_change = False
 
-		return decision_tree, do_change, pruned
+		return decision_tree
 
 	def pruningTree(self, decision_tree, data, labels, alpha = 0.05):
 		"""takes decision tree as parameter and returns a pruned tree based on chi square
@@ -280,7 +276,7 @@ class DecisionTree: #nom de la class à changer
 				#print("itération")
 				#continue l'élagage tant qu'il est possible ou jusqu'à ce que l'abre soit entièrement élagué 
 				pruned = False
-				new_decision_tree, _, pruned = self.pruningLeaves(decision_tree, data, labels, pruned)
+				new_decision_tree = self.pruningLeaves(decision_tree, data, labels)
 				if new_decision_tree != "pruned" :
 					decision_tree = new_decision_tree
 		return decision_tree
