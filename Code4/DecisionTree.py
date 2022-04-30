@@ -12,9 +12,7 @@ import numpy as np
 from metrics import show_metrics
 import matplotlib.pyplot as plt
 import networkx as nx
-import pylab
-from scipy.stats import chi2, chi2_contingency
-import pandas as pd
+from scipy.stats import chi2
 from drawTree import hierarchy_pos
 
 # le nom de votre classe
@@ -108,7 +106,7 @@ class DecisionTree: #nom de la class à changer
 		if self.names == None :
 			self.names = ["Attribut " + str(i) for i in range(train.shape[1])]
 		if max_depth == None :
-			max_depth = train.shape[1] +1
+			max_depth = 1000
 		if current_depth == max_depth or len(np.unique(train_labels)) == 1: # si l'arbre est assez profond ou si une seule classe on classifie
 			return self.classifyData(train_labels)
 		else :
@@ -126,6 +124,7 @@ class DecisionTree: #nom de la class à changer
 					yesAnswer = self.train(dataB, labelsB, current_depth, max_depth)
 					decisionSubTree[question] = yesAnswer
 				return decisionSubTree
+
 			else : # si l'attribut est numérique, l'arbre de décision est fait sur un intervalle
 				#value = np.mean(train[:, racine])
 				questionInf = "{} <= {}".format(self.names[racine], best_split_value)
@@ -172,7 +171,7 @@ class DecisionTree: #nom de la class à changer
 			index = [i==attribute for i in self.names]
 			attribute = np.where(index)[0]
 			if x[int(attribute)] <= float(value):
-				answer = decision_tree[question]
+				answer = decision_tree[questions[0]]
 			else:
 				answer = decision_tree[questions[1]]
 		return self.predict(x, answer)
@@ -189,6 +188,99 @@ class DecisionTree: #nom de la class à changer
 		"""
 		y_pred = np.array([self.predict(x, decision_tree) for x in X])
 		show_metrics(y, y_pred)
+
+	def pruningLeaves(self, decision_tree, data, labels, pruned = False, alpha = 0.05):
+		"""
+		fait l'élagage des noeuds, prend en argument :
+		- decision_tree : un arbre de décision
+		- data : les données 
+		- labels : les classes des données
+		- alpha : le seuil pour le test chi2
+		
+		retourne :
+		- un arbre élagué 1 fois en se basant sur chi square
+		"""
+		isLeaf = True
+		do_change = False
+		for key in list(decision_tree.keys()):
+			if isinstance(decision_tree[key], dict):
+				isLeaf = False
+				parent = key
+		
+				sep = ' <= '
+				question = parent.split(sep)
+				if len(question)<2 : 
+					sep = " > "
+					question = parent.split(sep)
+				if len(question)<2 : 
+					sep = " == "
+					question = parent.split(' == ')
+				attribute, value = question[0], question[1]
+				attribute = np.where([i == attribute for i in self.names])[0][0]
+				indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
+				labels = labels[indexCorrect]
+				data = data[indexCorrect,:]
+				_, do_change, pruned = self.pruningLeaves(decision_tree[parent], data, labels, pruned)
+				if do_change :
+					print("remplacement")
+					decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
+
+		
+		if isLeaf: # si deux feuilles
+			# calcul de delta à comparer à chi2 pour alpha
+			attribute, value = list(decision_tree.keys())[0].split(' <= ')
+			attributeIndex = np.where([i == attribute for i in self.names])[0][0]
+			value = float(value)
+
+			index_child_left = np.where(data[:, attributeIndex] <= value)[0]
+			index_child_right = np.where(data[:, attributeIndex] > value)[0]
+			labels_child_left = labels[index_child_left]
+			labels_child_right= labels[index_child_right]
+
+			uniques_root, nb_uniques_root = np.unique(labels, return_counts = True)
+			nb_uniques_child_left = np.array([np.sum(labels_child_left==i) for i in uniques_root])
+			nb_uniques_child_right = np.array([np.sum(labels_child_right==i) for i in uniques_root])
+
+			p_left = np.sum(nb_uniques_child_left)/np.sum(nb_uniques_root)
+			p_right= np.sum(nb_uniques_child_right)/np.sum(nb_uniques_root)
+
+			nb_expected_left = p_left * nb_uniques_root
+			nb_expected_right = p_right * nb_uniques_root 
+
+			# calcul de delta
+			delta = np.sum(np.divide((nb_expected_left-nb_uniques_child_left)**2 , nb_expected_left) + np.divide((nb_expected_right-nb_uniques_child_right)**2 , nb_expected_right) )
+			print(attribute + " <= " + str(value))
+			print("delta", delta)
+			dof = len(labels) - 1
+			print("chi2", chi2.isf(q=alpha, df=dof))
+			if delta > chi2.isf(q=alpha, df=dof): # on fait l'élagage, on rejette l'hypothèse
+				do_change = True
+				pruned = True
+				decision_tree = "pruned"
+				print("élagage")
+
+		return decision_tree, do_change, pruned
+
+	def pruningTree(self, decision_tree, data, labels, alpha = 0.05):
+		"""takes decision tree as parameter and returns a pruned tree based on chi square
+			params:
+				obj (dict):
+				obj is a decision tree encoded in the form of decision tree
+			return:
+				obj (dict):
+				obj is decision tree with pruned leaves
+		"""
+		if isinstance(decision_tree, dict):
+			pruned = True
+			new_decision_tree = decision_tree
+			while pruned and new_decision_tree != "pruned":
+				print("itération")
+				#continue l'élagage tant qu'il est possible ou jusqu'à ce que l'abre soit entièrement élagué 
+				pruned = False
+				new_decision_tree, _, pruned = self.pruningLeaves(decision_tree, data, labels, pruned)
+				if new_decision_tree != "pruned" :
+					decision_tree = new_decision_tree
+		return decision_tree
 
 	def build_learning_curve(self, train, train_labels, seed, do_pruning = False):
 		size = []
@@ -276,71 +368,3 @@ class DecisionTree: #nom de la class à changer
 		plt.axis('off')
 		plt.savefig("tree_{}_{}.png".format(name, dataset))
 		#plt.show()
-
-	def pruningLeaves(self, decision_tree, data, labels):
-		"""takes decision tree as parameter and returns a pruned tree based on chi square
-			params:
-				obj (dict):
-				obj is a decision tree encoded in the form of decision tree
-			return:
-				obj (dict):
-				obj is decision tree with pruned leaves
-		"""
-		isLeaf = True
-		parent = None
-		for key in list(decision_tree.keys()):
-			if isinstance(decision_tree[key], dict):
-				isLeaf = False
-				parent = key
-				break
-		if isLeaf and list(decision_tree.keys())[0].split(' <= ')[0] not in self.satisfied_attributes:
-			global pruned
-			pruned = True
-			return decision_tree
-
-		if not isLeaf:
-			sep = ' <= '
-			question = parent.split(sep)
-			if len(question)<2 : 
-				sep = " > "
-				question = parent.split(sep)
-			if len(question)<2 : 
-				sep = " == "
-				question = parent.split(' == ')
-			attribute, value = question[0], question[1]
-			attribute = np.where([i == attribute for i in self.names])[0][0]
-			indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
-			labels = labels[indexCorrect]
-			data = data[indexCorrect,:]
-			if self.pruningLeaves(decision_tree[parent], data, labels):
-				decision_tree[parent] = self.classifyData(labels) # on élague et on rempace le noeud par un noeud feuille
-
-		return decision_tree
-
-	def pruningTree(self, decision_tree, data, labels, alpha = 0.05):
-		"""takes decision tree as parameter and returns a pruned tree based on chi square
-			params:
-				obj (dict):
-				obj is a decision tree encoded in the form of decision tree
-			return:
-				obj (dict):
-				obj is decision tree with pruned leaves
-		"""
-		self.satisfied_attributes = []
-
-		for i in range(data.shape[1]):
-			contengency = pd.crosstab(data[:, i], labels)
-			c, p, dof, expected = chi2_contingency(contengency)
-			if c > chi2.isf(q=alpha, df=dof):
-				self.satisfied_attributes.append(self.names[i])
-
-		if isinstance(decision_tree, dict):
-			pruned = True
-			while pruned and decision_tree != "pruned":
-				#keep pruning till leaf nodes can be pruned or till whole tree has been pruned
-				pruned = False
-				decision_tree = self.pruningLeaves(decision_tree, data, labels)
-				if decision_tree == 'pruned':
-					break
-		#print(decision_tree)
-		return decision_tree
