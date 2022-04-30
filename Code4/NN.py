@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
-# Author: Ahmed BESBES 
-# <ahmed.besbes@hotmail.com>
-#
-
-# matplotlib for plotting
+"""
+Vous allez definir une classe pour chaque algorithme que vous allez développer,
+votre classe doit contenir au moins les 3 méthodes definies ici bas, 
+	* train 	: pour entraîner le modèle sur l'ensemble d'entrainement.
+	* predict 	: pour prédire la classe d'un exemple donné.
+	* evaluate 		: pour evaluer le classifieur avec les métriques demandées. 
+vous pouvez rajouter d'autres méthodes qui peuvent vous etre utiles, mais la correction
+se fera en utilisant les méthodes train, predict et evaluate de votre code.
+"""
 import math
 from matplotlib import pyplot as plt
-
 # numpy for vector and matrix manipulations
 import numpy as np
-
 from metrics import show_metrics
-
-# tqdm is progress-bar. make sure it's installed: pip install tqdm
+# tqdm est une barre de progression (si la librairie n'est pas installée -> pip install tqdm)
 from tqdm import tqdm
 
 def activation_relu(x,  derivative=False):
@@ -32,12 +32,12 @@ def activation_sigmoid(z, derivative=False):
     Cela prend en compte deux modes: normal et le mode "derivative".
     Applique l'opération choisie aux vecteurs
     
-    Entrees:
+    Entrées:
     ---
-    z: pre-activation vector at layer l
-        shape (n[l], batch_size)
+    z: vecteur de pre-activation pour une couche l,
+        il est de taille (n[l], batch_size)
 
-    Returns: 
+    Retourne: 
     pontwize activation on each element of the input z
     """
     if derivative:
@@ -75,19 +75,17 @@ def cost_function_prime(y_true, y_pred):
     cost_prime = y_pred - y_true
     return cost_prime
 
-
-
 class NeuralNet():     
     '''
     classe réseaux de neurones
     '''
 
-    def __init__(self, nb_entrees = 1, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 3, batch_size = 16, epochs = 10, learning_rate = 0.1, weight_null = False, seed=42):
-        '''
-        Instantiate the weights and biases of the network
-        weights and biases are attributes of the NeuralNetwork class
-        They are updated during the training
-        '''
+    def __init__(self, nb_entrees = 1, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 3, batch_size = 16, epochs = 1000, learning_rate = 0.5, weight_null = False, seed=42):
+        """
+		C'est un Initializer. 
+		Vous pouvez passer d'autre paramètres au besoin,
+		c'est à vous d'utiliser vos propres notations
+		"""
         self.seed = seed
         np.random.seed(self.seed)
         self.size = [nb_entrees] # couche entrée
@@ -100,6 +98,8 @@ class NeuralNet():
         self.learning_rate = learning_rate
 
         if not weight_null :
+            # les poids sont les connexions entre deux couches qui se suivent
+            # ils sont pris aléatoirement entre -1 et 1
             self.weights = [np.random.randn(self.size[i], self.size[i-1]) * np.sqrt(1 / self.size[i-1]) for i in range(1, len(self.size))]
             self.biases = [np.random.rand(n, 1) for n in self.size[1:]]
         else :
@@ -263,6 +263,8 @@ class NeuralNet():
                     db_per_epoch[i] += db_i / batch_size
 
                 batch_y_train_pred = self.predict(batch_x)
+                print(batch_y)
+                print(batch_y_train_pred)
                 train_loss = cost_function(batch_y, batch_y_train_pred)
                 train_losses.append(train_loss)
                 train_accuracy = np.mean(batch_y[0] == batch_y_train_pred[0])
@@ -315,9 +317,18 @@ class NeuralNet():
         return history
         
     def train(self, x_train, y_train, print_every=10, tqdm_=False):
-        """
-        entraîne le réseau de neurones
-        """
+       	"""
+		C'est la méthode qui va entrainer votre modèle,
+		train est une matrice de type Numpy et de taille nxm, avec 
+		n : le nombre d'exemple d'entrainement dans le dataset
+		m : le nombre d'attributs (le nombre de caractéristiques)
+		
+		train_labels : est une matrice numpy de taille nx1
+		
+		vous pouvez rajouter d'autres arguments, il suffit juste de
+		les expliquer en commentaire
+		
+		"""
 
         history_train_losses = []
         history_train_accuracies = []
@@ -360,9 +371,14 @@ class NeuralNet():
                     db_per_epoch[i] += db_i / batch_size
 
                 batch_y_train_pred = self.predict(batch_x)
+             
                 train_loss = cost_function(batch_y, batch_y_train_pred)
                 train_losses.append(train_loss)
-                train_accuracy = np.mean(batch_y[0] == batch_y_train_pred[0])
+
+                true = np.argmax(batch_y, axis = 0)
+                predictions = np.argmax(batch_y_train_pred, axis=0) 
+                train_accuracy = np.mean(true == predictions)
+
                 train_accuracies.append(train_accuracy)
 
 
@@ -383,7 +399,7 @@ class NeuralNet():
                    'train_acc': history_train_accuracies
                    }
         return history
-  
+        
     def predict(self, a):
         '''
         Use the current state of the network to make predictions
@@ -400,9 +416,9 @@ class NeuralNet():
         for w, b in zip(self.weights, self.biases):
             z = np.dot(w, a) + b
             a = activation_sigmoid(z)
-        predictions = np.array([[np.where(a[:, i] == max(a[:, i]))[0][0] for i in range(len(a[0]))]])
-        #print(predictions)
-        return predictions
+       
+        #predictions = (a > 0.5).astype(int)
+        return a
         
     def evaluate(self, X, y):
         """
@@ -416,7 +432,9 @@ class NeuralNet():
 		vous pouvez rajouter d'autres arguments, il suffit juste de
 		les expliquer en commentaire
 		"""
-        y_pred = self.predict(X)[0]
+        y_pred_proba = self.predict(X)
+        y_pred = np.argmax(y_pred_proba, axis = 0)
+        y = np.argmax(y, axis = 0)
         show_metrics(y, y_pred)
 
 def plot_history(history, show_valid = False):
@@ -441,7 +459,7 @@ def plot_history(history, show_valid = False):
     plt.show()
 
 
-def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[100], list_learning_rate=[0.1], k = 8, list_nb_neurones = range(4, 100), list_nb_hidden_layers = [1]):
+def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[1000], list_learning_rate=[0.5], k = 5, list_nb_neurones = range(2, 50), list_nb_hidden_layers = [1]):
     """
     Fonction qui permet de rechercher les meilleurs hyperparamètres
     """
@@ -457,31 +475,31 @@ def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[100], li
         for batch_size in list_batch_size :
             for epochs in list_epochs:
                 for nb_hidden_layers in list_nb_hidden_layers:
-                    mean_accuracies_train = []
-                    mean_accuracies_valid = []
+                    error_valid = []
+                    error_train = []
                     for nb_neurones in list_nb_neurones:
                         # 2-1) boucle de validation croisée
                         all_accuracy_valid = []
                         all_accuracy_train = []
                         for i_fold in range(k):
-                            model = NeuralNet(train.shape[1], len(np.unique(train_labels)), nb_hidden_layers, nb_neurones, batch_size, epochs, learning_rate, weight_null = False)
+                            model = NeuralNet(train.shape[1], train_labels.shape[1], nb_hidden_layers, nb_neurones, batch_size, epochs, learning_rate, weight_null = False)
                             idx = valid_indices[i_fold]
                             # séparation train/validation
-                            valid_data, valid_lab = train[idx], train_labels[idx]
-                            train_data, train_lab = np.delete(train, idx, axis =0), np.delete(train_labels, idx)
+                            valid_data, valid_lab = train[idx, :], train_labels[idx, :]
+                            train_data, train_lab = np.delete(train, idx, axis =0), np.delete(train_labels, idx, axis = 0)
                             # a) entraînement du modèle
-                            history = model.train(train_data.T, np.array([train_lab]), tqdm_=False)
+                            history = model.train(train_data.T,train_lab.T, tqdm_=False)
                             # b) prédiction sur les données de validation
                             valid_pred = model.predict(valid_data.T)
-                            # c) calcul de l'exactitude
-                            all_accuracy_valid.append(np.mean(valid_lab == valid_pred[0]))
-          
+                            # c) calcul de l'exactitude2 
+                            all_accuracy_valid.append(np.mean(np.argmax(valid_lab.T, axis = 0) == np.argmax(valid_pred, axis=0)))
                             all_accuracy_train.append(history['train_acc'][-1])
+                            
 
                         # 2-2) moyenne des exactitudes pour les hyperparamètres
                         mean_accuracy = np.mean(all_accuracy_valid)
-                        mean_accuracies_valid.append(mean_accuracy)
-                        mean_accuracies_train.append(np.mean(all_accuracy_train))
+                        error_valid.append(1-mean_accuracy)
+                        error_train.append(1-np.mean(all_accuracy_train))
                         if max_mean_accuracy == None or max_mean_accuracy < mean_accuracy :
                             # nous retenons le maximum des exactitudes
                             max_mean_accuracy = mean_accuracy 
@@ -492,8 +510,8 @@ def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[100], li
                             best_epochs = epochs
                             best_learning_rate = learning_rate
 
-    plt.plot(list_nb_neurones, mean_accuracies_train, label ='Moyenne des exactitudes en entraînement')
-    plt.plot(list_nb_neurones, mean_accuracies_valid, label ='Moyenne des exactitudes en validation')
+    plt.plot(list_nb_neurones, error_train, label ='Erreur moyenne en entraînement')
+    plt.plot(list_nb_neurones, error_valid, label ='Erreur moyenne en validation')
     plt.xlabel('Nombre de neurones')
     plt.legend()
     plt.show()

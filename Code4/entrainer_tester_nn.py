@@ -10,6 +10,7 @@ import NN
 from sklearn import datasets
 
 
+
 """
 C'est le fichier main duquel nous allons tout lancer
 Vous allez dire en commentaire c'est quoi les paramètres que vous avez utilisés
@@ -32,13 +33,14 @@ test.evaluate(train, train_labels, decision_tree)
 train_ratio = 0.7
 init_weight_null = False
 batch_size = 16
-lr = 0.1
-n_epochs = 100
+lr = 0.5
+n_epochs = 1000
 nb_hidden_layers = 1
 nb_neurones = 10
+
 # --> 1- Initialisation des classifieurs avec leurs paramètres
-classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones =5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
-classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 7, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
+classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones =3, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
+classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
 classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
 
 # --> 2- Chargement du dataset
@@ -49,18 +51,18 @@ wine = load_datasets.load_wine_dataset(train_ratio)
 # 3) jeu abalone
 abalone = load_datasets.load_abalone_dataset(train_ratio)
 
-# index des variables factorielles
-"""
-from sklearn import datasets
-data = datasets.make_blobs(n_samples=1000, centers=2, random_state=2)
-X = data[0].T
-y = np.expand_dims(data[1], 1).T
-print(X)
-print(y)
-"""
+def binarize(z):
+    """
+    fonction qui permet de binariser les labels (écrits sous forme de vecteurs encodés)
+    """
+    return(z[:, None] == np.arange(z.max()+1)).astype(int)
+
+
 for dataset in ["iris"]:
    
     train, train_labels, test, test_labels = eval(dataset)
+
+    train_labels, test_labels = binarize(train_labels), binarize(test_labels)
     best_params = NN.grid_search(train, train_labels)
     print(best_params)
    
@@ -74,7 +76,7 @@ for dataset in ["iris"]:
 
     # --> Entraînement du classifieur
     tps1 = perf_counter()
-    history = classif_nn.train(train.T, np.array([train_labels]))
+    history = classif_nn.train(train.T, train_labels.T)
     NN.plot_history(history)
     # --> Evaluation sur les données d'entraînement
     print("\n######################################\nEvaluation sur les données d'entraînement")
@@ -82,7 +84,7 @@ for dataset in ["iris"]:
 
     # --> Evaluation sur les données de test
     print("\n######################################\nEvaluation sur les données de test")
-    classif_nn.evaluate(test.T, test_labels)
+    classif_nn.evaluate(test.T, test_labels.T)
     tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     print("\nTemps d'exécution :", tps2-tps1)
    

@@ -265,7 +265,6 @@ class NeuralNet: #nom de la class à changer
 				self.biases[i] = self.biases[i] - learning_rate * db_epoch
 				
 			history_train_losses.append(np.mean(train_losses))
-			print(train_losses)
 			history_train_accuracies.append(np.mean(train_accuracies))
 			
 			history_test_losses.append(np.mean(test_losses))
