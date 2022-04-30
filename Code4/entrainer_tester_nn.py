@@ -30,11 +30,16 @@ print(decision_tree)
 test.evaluate(train, train_labels, decision_tree)
 """
 train_ratio = 0.7
-
+init_weight_null = False
+batch_size = 16
+lr = 0.1
+n_epochs = 100
+nb_hidden_layers = 1
+nb_neurones = 10
 # --> 1- Initialisation des classifieurs avec leurs paramètres
-classif_nn_iris = NN.NeuralNetwork(size = [4, 3, 1])
-classif_nn_wine = NeuralNet.NeuralNet()
-classif_nn_abalone = NeuralNet.NeuralNet()
+classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones =5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
+classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 7, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
+classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
@@ -54,7 +59,12 @@ print(X)
 print(y)
 """
 for dataset in ["iris"]:
+   
     train, train_labels, test, test_labels = eval(dataset)
+    best_params = NN.grid_search(train, train_labels)
+    print(best_params)
+   
+
     #print(np.array([train_labels]))
     ############################################################################
     # NeuralNet
@@ -64,7 +74,7 @@ for dataset in ["iris"]:
 
     # --> Entraînement du classifieur
     tps1 = perf_counter()
-    history = classif_nn.train(train.T, np.array([train_labels]), train_split = 0.8, batch_size = 16, epochs=100, learning_rate=0.1)
+    history = classif_nn.train(train.T, np.array([train_labels]))
     NN.plot_history(history)
     # --> Evaluation sur les données d'entraînement
     print("\n######################################\nEvaluation sur les données d'entraînement")
@@ -75,18 +85,5 @@ for dataset in ["iris"]:
     classif_nn.evaluate(test.T, test_labels)
     tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     print("\nTemps d'exécution :", tps2-tps1)
-
-    """
-    # --> Avec sklearn
-    model_NeuralNet = NeuralNetClassifier()
-    model_NeuralNet = model_NeuralNet.fit(train, train_labels)
-    plot_tree(model_NeuralNet)
-    plt.show()
-    predictions = model_NeuralNet.predict(test)
-    print("\n######################################\nRésultats sklearn Decision Tree")
-    metrics.show_metrics(test_labels, predictions)
-    """
-
-
-
+   
 

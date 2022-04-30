@@ -15,14 +15,24 @@ from metrics import show_metrics
 # tqdm is progress-bar. make sure it's installed: pip install tqdm
 from tqdm import tqdm
 
-
-def activation(z, derivative=False):
+def activation_relu(x,  derivative=False):
     """
-    Sigmoid activation function:
-    It handles two modes: normal and derivative mode.
-    Applies a pointwize operation on vectors
+    Fonction d'activation relu
+    """
+    if derivative :
+        y=x
+        np.piecewise(y,[activation_relu(y)==0,activation_relu(y)==y],[0,1])
+        return y
+    else :
+        return (np.abs(x)+x)/2
+
+def activation_sigmoid(z, derivative=False):
+    """
+    Fonction d'activation Sigmoid
+    Cela prend en compte deux modes: normal et le mode "derivative".
+    Applique l'opération choisie aux vecteurs
     
-    Parameters:
+    Entrees:
     ---
     z: pre-activation vector at layer l
         shape (n[l], batch_size)
@@ -31,7 +41,7 @@ def activation(z, derivative=False):
     pontwize activation on each element of the input z
     """
     if derivative:
-        return activation(z) * (1 - activation(z))
+        return activation_sigmoid(z) * (1 - activation_sigmoid(z))
     else:
         return 1 / (1 + np.exp(-z))
 
@@ -67,34 +77,12 @@ def cost_function_prime(y_true, y_pred):
 
 
 
-class NeuralNetwork(object):     
+class NeuralNet():     
     '''
-    This is a custom neural netwok package built from scratch with numpy. 
-    It allows training using SGD, inference and live plotting of the decision boundary.
-    This code is not optimized and should not be used with real-world examples.
-    It's written for educational purposes only.
-
-    The Neural Network as well as its parameters and training method and procedure will 
-    reside in this class.
-
-    Parameters
-    ---
-    size: list of number of neurons per layer
-
-    Examples
-    ---
-    >>> import NeuralNetwork
-    >>> nn = NeuralNetword([2, 3, 4, 1])
-    
-    This means :
-    1 input layer with 2 neurons
-    1 hidden layer with 3 neurons
-    1 hidden layer with 4 neurons
-    1 output layer with 1 neuron
-    
+    classe réseaux de neurones
     '''
 
-    def __init__(self, size, seed=42):
+    def __init__(self, nb_entrees = 1, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 3, batch_size = 16, epochs = 10, learning_rate = 0.1, weight_null = False, seed=42):
         '''
         Instantiate the weights and biases of the network
         weights and biases are attributes of the NeuralNetwork class
@@ -102,9 +90,22 @@ class NeuralNetwork(object):
         '''
         self.seed = seed
         np.random.seed(self.seed)
-        self.size = size
-        self.weights = [np.random.randn(self.size[i], self.size[i-1]) * np.sqrt(1 / self.size[i-1]) for i in range(1, len(self.size))]
-        self.biases = [np.random.rand(n, 1) for n in self.size[1:]]
+        self.size = [nb_entrees] # couche entrée
+        for i in range(nb_hidden_layers): self.size.append(nb_neurones) # couches cachées
+        self.size.append(nb_sorties) # couche de sortie
+        print(self.size)
+
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+
+        if not weight_null :
+            self.weights = [np.random.randn(self.size[i], self.size[i-1]) * np.sqrt(1 / self.size[i-1]) for i in range(1, len(self.size))]
+            self.biases = [np.random.rand(n, 1) for n in self.size[1:]]
+        else :
+            self.weights = [np.zeros((self.size[i], self.size[i-1])) for i in range(1, len(self.size))]
+            self.biases = [np.zeros((n, 1)) for n in self.size[1:]]
+       
 
     def forward(self, input):
         '''
@@ -131,7 +132,7 @@ class NeuralNetwork(object):
         activations = [a]
         for w, b in zip(self.weights, self.biases):
             z = np.dot(w, a) + b
-            a  = activation(z)
+            a  = activation_sigmoid(z)
             pre_activations.append(z)
             activations.append(a)
         return a, pre_activations, activations
@@ -150,11 +151,11 @@ class NeuralNetwork(object):
         deltas: a list of deltas per layer
         
         """
-        delta_L = cost_function_prime(y_true, y_pred) * activation(pre_activations[-1], derivative=True)
+        delta_L = cost_function_prime(y_true, y_pred) * activation_sigmoid(pre_activations[-1], derivative=True)
         deltas = [0] * (len(self.size) - 1)
         deltas[-1] = delta_L
         for l in range(len(deltas) - 2, -1, -1):
-            delta = np.dot(self.weights[l + 1].transpose(), deltas[l + 1]) * activation(pre_activations[l], derivative=True) 
+            delta = np.dot(self.weights[l + 1].transpose(), deltas[l + 1]) * activation_sigmoid(pre_activations[l], derivative=True) 
             deltas[l] = delta
         return deltas
 
@@ -184,7 +185,7 @@ class NeuralNetwork(object):
             db.append(np.expand_dims(db_l.mean(axis=1), 1))
         return dW, db
 
-    def train(self, X, y, batch_size, epochs, learning_rate, train_split=0.8, print_every=10, tqdm_=False, plot_every=None):
+    def train1(self, X, y, batch_size, epochs, learning_rate, train_split=0.8, print_every=10, tqdm_=False, plot_every=None):
         """
         Trains the network using the gradients computed by back-propagation
         Splits the data in train and validation splits
@@ -234,20 +235,16 @@ class NeuralNetwork(object):
                 n_batches = int(x_train.shape[1] / batch_size)
             else:
                 n_batches = int(x_train.shape[1] / batch_size ) - 1
+
             idx = np.arange(x_train.shape[1])
             np.random.shuffle(idx)
-            print(idx)
+
             x_train = x_train[:, idx]
             y_train = y_train[:,idx]
-			#print(x_train)
-            """
-            x_train, y_train = shuffle(x_train.T, y_train.T)
-           
-            x_train, y_train = x_train.T, y_train.T
-            """
+
             batches_x = [x_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
             batches_y = [y_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-
+            
             train_losses = []
             train_accuracies = []
             
@@ -266,12 +263,11 @@ class NeuralNetwork(object):
                     db_per_epoch[i] += db_i / batch_size
 
                 batch_y_train_pred = self.predict(batch_x)
-
                 train_loss = cost_function(batch_y, batch_y_train_pred)
                 train_losses.append(train_loss)
                 train_accuracy = np.mean(batch_y[0] == batch_y_train_pred[0])
                 train_accuracies.append(train_accuracy)
-
+                
                 batch_y_test_pred = self.predict(x_test)
 
                 test_loss = cost_function(y_test, batch_y_test_pred)
@@ -315,8 +311,79 @@ class NeuralNetwork(object):
                    'valid_loss': history_test_losses,
                    'valid_acc': history_test_accuracies
                    }
+        print(history_train_accuracies)
         return history
+        
+    def train(self, x_train, y_train, print_every=10, tqdm_=False):
+        """
+        entraîne le réseau de neurones
+        """
 
+        history_train_losses = []
+        history_train_accuracies = []
+        batch_size = self.batch_size
+        epochs = self.epochs 
+        learning_rate = self.learning_rate
+
+        if tqdm_:
+            epoch_iterator = tqdm(range(epochs))
+        else:
+            epoch_iterator = range(epochs)
+
+        for e in epoch_iterator:
+            if x_train.shape[1] % batch_size == 0:
+                n_batches = int(x_train.shape[1] / batch_size)
+            else:
+                n_batches = int(x_train.shape[1] / batch_size ) - 1
+
+            idx = np.arange(x_train.shape[1])
+            np.random.shuffle(idx)
+
+            x_train = x_train[:, idx]
+            y_train = y_train[:,idx]
+
+            batches_x = [x_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
+            batches_y = [y_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
+
+            train_losses = []
+            train_accuracies = []
+
+            dw_per_epoch = [np.zeros(w.shape) for w in self.weights]
+            db_per_epoch = [np.zeros(b.shape) for b in self.biases] 
+            
+            for batch_x, batch_y in zip(batches_x, batches_y):
+                batch_y_pred, pre_activations, activations = self.forward(batch_x)
+                deltas = self.update_deltas(pre_activations, batch_y, batch_y_pred)
+                dW, db = self.backpropagate(deltas, pre_activations, activations)
+                for i, (dw_i, db_i) in enumerate(zip(dW, db)):
+                    dw_per_epoch[i] += dw_i / batch_size
+                    db_per_epoch[i] += db_i / batch_size
+
+                batch_y_train_pred = self.predict(batch_x)
+                train_loss = cost_function(batch_y, batch_y_train_pred)
+                train_losses.append(train_loss)
+                train_accuracy = np.mean(batch_y[0] == batch_y_train_pred[0])
+                train_accuracies.append(train_accuracy)
+
+
+            # weight update
+            for i, (dw_epoch, db_epoch) in enumerate(zip(dw_per_epoch, db_per_epoch)):
+                self.weights[i] = self.weights[i] - learning_rate * dw_epoch
+                self.biases[i] = self.biases[i] - learning_rate * db_epoch
+
+            history_train_losses.append(np.mean(train_losses))
+            history_train_accuracies.append(np.mean(train_accuracies))
+
+            if e % print_every == 0:    
+                print('Epoch {} / {} | train loss: {} | train accuracy: {}'.format(
+                    e, epochs, np.round(np.mean(train_losses), 3), np.round(np.mean(train_accuracies), 3)))
+
+        history = {'epochs': epochs,
+                   'train_loss': history_train_losses, 
+                   'train_acc': history_train_accuracies
+                   }
+        return history
+  
     def predict(self, a):
         '''
         Use the current state of the network to make predictions
@@ -329,10 +396,12 @@ class NeuralNetwork(object):
         ---
         predictions: vector of output predictions
         '''
+        #print(a)
         for w, b in zip(self.weights, self.biases):
             z = np.dot(w, a) + b
-            a = activation(z)
-        predictions = (a > 0.5).astype(int)
+            a = activation_sigmoid(z)
+        predictions = np.array([[np.where(a[:, i] == max(a[:, i]))[0][0] for i in range(len(a[0]))]])
+        #print(predictions)
         return predictions
         
     def evaluate(self, X, y):
@@ -350,23 +419,82 @@ class NeuralNetwork(object):
         y_pred = self.predict(X)[0]
         show_metrics(y, y_pred)
 
-def plot_history(history):
+def plot_history(history, show_valid = False):
     n = history['epochs']
     plt.figure(figsize=(15, 5))
     plt.subplot(1, 2, 1)
     n = 4000
     plt.plot(range(history['epochs'])[:n], history['train_loss'][:n], label='Perte en entraînement')
-    plt.plot(range(history['epochs'])[:n], history['valid_loss'][:n], label='Perte en validation')
-    plt.title('Perte en entraînement et en validation')
+    if show_valid : plt.plot(range(history['epochs'])[:n], history['valid_loss'][:n], label='Perte en validation')
+    #plt.title('Perte en entraînement et en validation')
     #plt.grid(1)
     plt.xlabel('Époques')
     plt.legend()
 
     plt.subplot(1, 2, 2)
     plt.plot(range(history['epochs'])[:n], history['train_acc'][:n], label='Exactitude en entraînement')
-    plt.plot(range(history['epochs'])[:n], history['valid_acc'][:n], label='Exactitude en validation')
-    plt.title('Exactitudes en entraînement et en validation')
+    if show_valid : plt.plot(range(history['epochs'])[:n], history['valid_acc'][:n], label='Exactitude en validation')
+    #plt.title('Exactitudes en entraînement et en validation')
     #plt.grid(1)
     plt.xlabel('Époques')
     plt.legend()
     plt.show()
+
+
+def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[100], list_learning_rate=[0.1], k = 8, list_nb_neurones = range(4, 100), list_nb_hidden_layers = [1]):
+    """
+    Fonction qui permet de rechercher les meilleurs hyperparamètres
+    """
+    fold_indices = np.arange(train.shape[0])
+    valid_indices = np.array_split(fold_indices, k)
+   
+	# initialisation d'un tableau qui contient les exactitudes pour chaque échantillon
+    
+    print(train.shape)
+    max_mean_accuracy = None
+    
+    for learning_rate in list_learning_rate:
+        for batch_size in list_batch_size :
+            for epochs in list_epochs:
+                for nb_hidden_layers in list_nb_hidden_layers:
+                    mean_accuracies_train = []
+                    mean_accuracies_valid = []
+                    for nb_neurones in list_nb_neurones:
+                        # 2-1) boucle de validation croisée
+                        all_accuracy_valid = []
+                        all_accuracy_train = []
+                        for i_fold in range(k):
+                            model = NeuralNet(train.shape[1], len(np.unique(train_labels)), nb_hidden_layers, nb_neurones, batch_size, epochs, learning_rate, weight_null = False)
+                            idx = valid_indices[i_fold]
+                            # séparation train/validation
+                            valid_data, valid_lab = train[idx], train_labels[idx]
+                            train_data, train_lab = np.delete(train, idx, axis =0), np.delete(train_labels, idx)
+                            # a) entraînement du modèle
+                            history = model.train(train_data.T, np.array([train_lab]), tqdm_=False)
+                            # b) prédiction sur les données de validation
+                            valid_pred = model.predict(valid_data.T)
+                            # c) calcul de l'exactitude
+                            all_accuracy_valid.append(np.mean(valid_lab == valid_pred[0]))
+          
+                            all_accuracy_train.append(history['train_acc'][-1])
+
+                        # 2-2) moyenne des exactitudes pour les hyperparamètres
+                        mean_accuracy = np.mean(all_accuracy_valid)
+                        mean_accuracies_valid.append(mean_accuracy)
+                        mean_accuracies_train.append(np.mean(all_accuracy_train))
+                        if max_mean_accuracy == None or max_mean_accuracy < mean_accuracy :
+                            # nous retenons le maximum des exactitudes
+                            max_mean_accuracy = mean_accuracy 
+                            # et les hyperparamètres associés
+                            best_hidden_layers = nb_hidden_layers
+                            best_nb_neurones = nb_neurones
+                            best_batch_size = batch_size
+                            best_epochs = epochs
+                            best_learning_rate = learning_rate
+
+    plt.plot(list_nb_neurones, mean_accuracies_train, label ='Moyenne des exactitudes en entraînement')
+    plt.plot(list_nb_neurones, mean_accuracies_valid, label ='Moyenne des exactitudes en validation')
+    plt.xlabel('Nombre de neurones')
+    plt.legend()
+    plt.show()
+    return best_nb_neurones, best_hidden_layers, best_batch_size, best_epochs, best_learning_rate

@@ -48,7 +48,7 @@ def load_iris_dataset(train_ratio, seed=1):
     indices = np.arange(nrow)
 
     # on normalise les données pour plus de précision 
-    #data = NormalizeData(data)
+    data = NormalizeData(data)
 
 	  # les exemples sont ordonnés dans le fichier du dataset, ils sont ordonnés par type de fleur
     # on utilise donc la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
