@@ -32,16 +32,11 @@ test.evaluate(train, train_labels, decision_tree)
 """
 train_ratio = 0.7
 init_weight_null = False
-batch_size = 16
-lr = 0.5
-n_epochs = 1000
-nb_hidden_layers = 1
-nb_neurones = 10
 
 # --> 1- Initialisation des classifieurs avec leurs paramètres
-classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones =3, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
-classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
-classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 5, batch_size = batch_size, epochs = n_epochs, learning_rate = lr, weight_null=init_weight_null)
+classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 2, nb_neurones =4, batch_size = 16, epochs = 1000, learning_rate = 0.5, weight_null=init_weight_null)
+classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 6, batch_size = 64, epochs = 20000, learning_rate = 0.5, weight_null=init_weight_null)
+classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 5, batch_size = 64, epochs = 100, learning_rate = 0.5, weight_null=init_weight_null)
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
@@ -58,7 +53,7 @@ def binarize(z):
     return(z[:, None] == np.arange(z.max()+1)).astype(int)
 
 
-for dataset in ["iris"]:
+for dataset in ["abalone"]:
    
     train, train_labels, test, test_labels = eval(dataset)
 
@@ -77,7 +72,8 @@ for dataset in ["iris"]:
     # --> Entraînement du classifieur
     tps1 = perf_counter()
     history = classif_nn.train(train.T, train_labels.T)
-    NN.plot_history(history)
+  
+    #NN.plot_history(history)
     # --> Evaluation sur les données d'entraînement
     print("\n######################################\nEvaluation sur les données d'entraînement")
     #classif_nn.evaluate(train, train_labels)
@@ -87,5 +83,11 @@ for dataset in ["iris"]:
     classif_nn.evaluate(test.T, test_labels.T)
     tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     print("\nTemps d'exécution :", tps2-tps1)
+
+    tps1 = perf_counter()
+    y_pred = classif_nn.predict(test[0,:].T)
+    tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
+    print("\nTemps de prédiction d'un exemple :", tps2-tps1)
+    
    
 
