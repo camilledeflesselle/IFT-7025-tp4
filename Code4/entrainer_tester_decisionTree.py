@@ -41,7 +41,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio, normalize_data=False)
 
 # index des variables factorielles
 
-for dataset in ["abalone"]:
+for dataset in ["iris", "wine", "abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
 
     classif_decisionTree = eval("classif_decisionTree_"+dataset)
@@ -94,7 +94,7 @@ for dataset in ["abalone"]:
     # --> Avec sklearn
     model_decisionTree = DecisionTreeClassifier()
     model_decisionTree = model_decisionTree.fit(train, train_labels)
-    plot_tree(model_decisionTree)
+    #plot_tree(model_decisionTree)
     plt.show()
     predictions = model_decisionTree.predict(test)
     print("\n######################################\nRésultats sklearn Decision Tree")

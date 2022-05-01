@@ -84,7 +84,7 @@ class DecisionTree: #nom de la class à changer
 				data = train[:, i]
 				data = np.where(data<=split_value, 0, 1)
 				gain = entropie_init - self.calculateGlobalEntropie(data, train_labels)
-				#print(gain)
+				
 				if max_gain == None or max_gain < gain :
 					max_gain = gain
 					best_column = i
@@ -292,7 +292,6 @@ class DecisionTree: #nom de la class à changer
 					new_decision_tree = "pruned"
 				else : 
 					decision_tree = new_decision_tree
-			print(decision_tree)
 		return decision_tree
 
 	def build_learning_curve(self, train, train_labels, seed, do_pruning = False):
