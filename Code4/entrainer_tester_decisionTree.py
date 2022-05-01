@@ -1,3 +1,10 @@
+############################################################################
+# DecisionTree
+############################################################################
+# Ce fichier permet de tester les résultats de l'arbre de décisions sur les 
+# différents datasets.
+############################################################################
+
 import numpy as np
 import sys
 import load_datasets
@@ -5,28 +12,17 @@ import DecisionTree # importer la classe de l'arbre de décision
 import NeuralNet# importer la classe du DecisionTree
 #importer d'autres fichiers et classes si vous en avez développés
 import metrics
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.tree import DecisionTreeClassifier, plot_tree # utilisés pour comparer
 from time import perf_counter
 import matplotlib.pyplot as plt
 import math
+
 """
-C'est le fichier main duquel nous allons tout lancer
-Vous allez dire en commentaire c'est quoi les paramètres que vous avez utilisés
-En gros, vous allez :
-1- Initialiser votre classifieur avec ses paramètres
+Nous allons :
+1- Initialiser les classifieurs avec leurs paramètres
 2- Charger les datasets
-3- Entraîner votre classifieur
+3- Entraîner chaque classifieur
 4- Le tester
-
-test = DecisionTree.DecisionTree(namesAtt=["Att1", "Att2"])
-train_labels = np.array([0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2])
-train = np.array([[1, 2, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1], [1, 1, 1, 1, 1, 2,2, 2, 1, 1, 2, 2], [0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0], [0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1]]).T
-#print(test.determineBestColumn(train, train_labels))
-decision_tree = test.train(train, train_labels)
-
-print(decision_tree)
-
-test.evaluate(train, train_labels, decision_tree)
 """
 train_ratio = 0.7
 
@@ -47,17 +43,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio, normalize_data=False)
 
 for dataset in ["abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
-    """
-    nrow = len(train_labels)
-    indices = np.arange(nrow)
-    split = math.floor(train_ratio * nrow)
-    train_idx,    valid_idx    = indices[:split],   indices[split:]
-    train,        valid        = train[train_idx],   train[valid_idx]
-    train_labels, valid_labels = train_labels[train_idx], train_labels[valid_idx]
-    """
-    ############################################################################
-    # DecisionTree
-    ############################################################################
+
     classif_decisionTree = eval("classif_decisionTree_"+dataset)
     print("\n######################################\nClassification DecisionTree / Dataset étudié = {}".format(dataset))
 
@@ -105,7 +91,6 @@ for dataset in ["abalone"]:
     tps5 = perf_counter()
     print("\nTemps de prédiction d'un exemple :", tps5-tps4)
 
-    """
     # --> Avec sklearn
     model_decisionTree = DecisionTreeClassifier()
     model_decisionTree = model_decisionTree.fit(train, train_labels)
@@ -114,7 +99,6 @@ for dataset in ["abalone"]:
     predictions = model_decisionTree.predict(test)
     print("\n######################################\nRésultats sklearn Decision Tree")
     metrics.show_metrics(test_labels, predictions)
-    """
 
 
 

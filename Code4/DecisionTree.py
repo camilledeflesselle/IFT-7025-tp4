@@ -1,18 +1,8 @@
-"""
-Vous allez definir une classe pour chaque algorithme que vous allez développer,
-votre classe doit contenir au moins les 3 méthodes definies ici bas, 
-	* train 	: pour entraîner le modèle sur l'ensemble d'entrainement.
-	* predict 	: pour prédire la classe d'un exemple donné.
-	* evaluate 		: pour evaluer le classifieur avec les métriques demandées. 
-vous pouvez rajouter d'autres méthodes qui peuvent vous etre utiles, mais la correction
-se fera en utilisant les méthodes train, predict et evaluate de votre code.
-"""
-
 import numpy as np
 from metrics import show_metrics
 import matplotlib.pyplot as plt
 import networkx as nx
-from scipy.stats import chi2
+from scipy.stats import chi2  # utilisé pour l'élagage
 from drawTree import hierarchy_pos
 
 # le nom de votre classe
@@ -24,8 +14,12 @@ class DecisionTree: #nom de la class à changer
 	def __init__(self, names = None, index_fact = None, conversion_labels = None, **kwargs):
 		"""
 		C'est un Initializer. 
-		Vous pouvez passer d'autre paramètres au besoin,
-		c'est à vous d'utiliser vos propres notations
+		Paramètres: (facultatifs)
+			names: noms de chaque attribut utilisés lors de la construction de l'arbre (meilleure compréhension)
+			index_fact: liste des index des attributs qui sont des attributs catégoriels
+			 -> par exemple [0] pour abalones dataset
+			conversion_labels: dictionnaire de conversion pour l'affichage de l'arbre avec les étiquettes initiales
+			 -> par exemple: {'0': 'Iris-setosa', '1' : 'Iris-versicolor', '2' : 'Iris-virginica'}
 		"""
 		self.index_fact = index_fact
 		self.names = names
@@ -33,7 +27,7 @@ class DecisionTree: #nom de la class à changer
 
 	def calculateEntropy(self, vector):
 		"""
-		calcule l'entropie d'un vecteur
+		Calcule l'entropie d'un vecteur vector.
 		"""
 		_, uniqueClassesNumber = np.unique(vector, return_counts = True)
 		proba = uniqueClassesNumber / uniqueClassesNumber.sum()
@@ -41,7 +35,12 @@ class DecisionTree: #nom de la class à changer
 		
 	def calculateGlobalEntropie(self, vector, labels):
 		"""
-		calcul le gain d'information pour un attribut
+		Méthode qui calcule l'entropie associée à un attribut.
+		Paramètres: 
+			vector: vecteur contenant les données d'un attribut
+			labels: vecteur de labels
+		Retourne:
+			l'entropie associée à un attribut 
 		"""
 		global_entropie = 0
 		for i in np.unique(vector):
@@ -52,10 +51,30 @@ class DecisionTree: #nom de la class à changer
 		return global_entropie
 
 	def classifyData(self, vector):
+		"""
+		Méthode qui renvoie la classe majoritaire d'un vecteur.
+		Paramètres: 
+			vector: vecteur de labels
+		Retourne:
+			classe majoritaire 
+		"""
 		uniqueClasses, uniqueClassesCounts = np.unique(vector, return_counts = True)
 		return uniqueClasses[uniqueClassesCounts.argmax()]
 
 	def determineBestColumn(self, train, train_labels, potentialSplits):
+		"""
+		Méthode qui calcule le gain d'information sur chaque attribut pour différentes valeurs de coupes.
+		Renvoie l'attribut qui maximise le gain et la valeur de coupe associée.
+		Paramètres: 
+			train est une matrice de type Numpy et de taille nxm, avec 
+				n: le nombre d'exemple d'entrainement dans le dataset
+				m: le nombre d'attributs (le nombre de caractéristiques)
+			train_labels: est une matrice numpy de taille nx1
+			potentialSplits: valeurs de coupes potentielles pour tous les attributs
+		Retourne:
+			best_column: attribut avec le meilleur gain d'information (int)
+			best_split_value: valeur de coupe correspondante (float)
+		"""
 		entropie_init = self.calculateEntropy(train_labels)
 		best_column = None
 		best_split_value = None
@@ -73,14 +92,27 @@ class DecisionTree: #nom de la class à changer
 		return best_column, best_split_value
 
 	def getPotentialSplits(self, data):
+		"""
+		Méthode qui retourne les différentes valeurs de coupes par attribut.
+		Paramètres: 
+			data est une matrice de type Numpy et de taille nxm, avec 
+				n: le nombre d'exemple d'entrainement dans le dataset
+				m: le nombre d'attributs (le nombre de caractéristiques)
+		Retourne:
+			potentialSplits: dictionnaire à m clés (attributs) dont les valeurs sont les listes de 
+			valeurs de coupes possible d'un attribut
+		"""
 		potentialSplits = {}
 		_, columns = data.shape
 		for column in range(columns):
 			values = data[:, column]
 			uniqueValues = np.unique(values) # uniques valeurs
+			# si l'attribut est un attribut catégoriel ou qu'il n'a qu'une unique valeur possible,
+			# les valeurs de coupes potentielles sont ses valeurs uniques
 			if len(uniqueValues) == 1 or (self.index_fact != None and column in self.index_fact) :
 				potentialSplits[column] = uniqueValues
 			else:
+				# sinon ce sont toutes les médianes entre deux valeurs uniques
 				potentialSplits[column] = []
 				for i in range(len(uniqueValues)):
 					if i != 0:
@@ -92,34 +124,41 @@ class DecisionTree: #nom de la class à changer
 
 	def train(self, train, train_labels, current_depth = 0, max_depth = None): #vous pouvez rajouter d'autres attributs au besoin
 		"""
-		C'est la méthode qui va entrainer votre modèle,
-		train est une matrice de type Numpy et de taille nxm, avec 
-		n : le nombre d'exemple d'entrainement dans le dataset
-		m : le nombre d'attributs (le nombre de caractéristiques)
-		
-		train_labels : est une matrice numpy de taille nx1
-		
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
-		construction de l'abre de décision de manière récursive
+		C'est la méthode récursive qui va entrainer le modèle en créant un arbre de décision.
+		Paramètres:
+			train est une matrice de type Numpy et de taille nxm, avec 
+				n: le nombre d'exemple d'entrainement dans le dataset
+				m: le nombre d'attributs (le nombre de caractéristiques)
+			train_labels : est une matrice numpy de taille nx1
+			current_depth: taille actuelle de l'arbre
+			max_depth: la taille maximale de l'arbre
+		Retourne:
+			l'arbre de décision actuel (dictionnaire)
 		"""
+		# on nomme les attributs pour améliorer la lisibilité
 		if self.names == None :
 			self.names = ["Attribut " + str(i) for i in range(train.shape[1])]
-		if (max_depth != None and current_depth == max_depth ) or len(np.unique(train_labels)) == 1: # si l'arbre est assez profond ou si une seule classe on classifie
+		
+		# si l'arbre est assez profond ou si une seule classe on classifie, en prenant la classe majoritaire
+		if (max_depth != None and current_depth == max_depth ) or len(np.unique(train_labels)) == 1:
 			return self.classifyData(train_labels)
-		else :
+		else : # sinon on crée un noeud avec deux branches
 			current_depth += 1
+			# potentielles valeurs de coupes pour les attributs (continus ou catégoriels)
 			potentialSplits = self.getPotentialSplits(train)
+			# racine trouvée en calculant les gains et valeur de coupe associée
 			racine, best_split_value = self.determineBestColumn(train, train_labels, potentialSplits)
+			# initialisation du noeud
 			decisionSubTree = {}
 			# on traite les attributs comme des attributs continus, l'arbre de décision est fait sur un intervalle
-			questionInf = "{} <= {}".format(self.names[racine], best_split_value)
-			questionSup = "{} > {}".format(self.names[racine], best_split_value)
+			# 1) branche gauche
+			questionInf = "{} <= {}".format(self.names[racine], best_split_value) 
 			indexInf = np.where(train[:, racine]<=best_split_value)[0]
-			dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
+			dataInf = train[indexInf, :]  
 			labelsInf = train_labels[indexInf]
 			decisionSubTree[questionInf] = self.train(dataInf, labelsInf, current_depth, max_depth)
-
+			# 2) branche droite
+			questionSup = "{} > {}".format(self.names[racine], best_split_value) 
 			indexSup = np.where(train[:, racine]>best_split_value)[0]
 			dataSup = train[indexSup, :]  # classes des individus dont la valeur de l'attribut est i
 			labelsSup = train_labels[indexSup]
@@ -128,8 +167,12 @@ class DecisionTree: #nom de la class à changer
 
 	def predict(self, x, decision_tree):
 		"""
-		Prédire la classe d'un exemple x donné en entrée
-		exemple est de taille 1xm
+		Méthode qui prédit la classe d'un exemple x donné en entrée.
+		Paramètres:
+			x: exemple qui est de taille 1xm
+			decision_tree: arbre de décision (dict)
+		Retourne:
+			L'étiquette prédite.
 		"""
 		if not isinstance(decision_tree, dict):
 			return decision_tree
@@ -148,27 +191,27 @@ class DecisionTree: #nom de la class à changer
 	
 	def evaluate(self, X, y, decision_tree):
 		"""
-		c'est la méthode qui va évaluer votre modèle sur les données X
-		l'argument X est une matrice de type Numpy et de taille nxm, avec 
-		n : le nombre d'exemple de test dans le dataset
-		m : le nombre d'attributs (le nombre de caractéristiques)
-		y : est une matrice numpy de taille nx1
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
+		Méthode qui va évaluer notre modèle sur les données X.
+        Paramètres:
+		    X: matrice de type Numpy et de taille nxm, avec 
+                n: le nombre d'exemple de test dans le dataset
+                m: le nombre d'attributs (le nombre de caractéristiques)
+		    y: est une matrice numpy de taille nx1
+			decision_tree: arbre de décision utilisé
 		"""
 		y_pred = np.array([self.predict(x, decision_tree) for x in X])
 		show_metrics(y, y_pred)
 
 	def pruningLeaves(self, decision_tree, data, labels, alpha = 0.05):
 		"""
-		fait l'élagage des noeuds, prend en argument :
-		- decision_tree : un arbre de décision
-		- data : les données 
-		- labels : les classes des données
-		- alpha : le seuil pour le test chi2
-		
-		retourne :
-		- un arbre élagué 1 fois en se basant sur chi square
+		Méthode qui fait l'élagage des noeuds.
+		Paramètres:
+			decision_tree: un arbre de décision (dict)
+			data: les données, matrice numpy de taille nxm
+		 	labels: les classes des données, matrice numpy de taille nx1
+			alpha: le seuil alpha pour le test chi2
+		Retourne:
+			un arbre élagué 1 fois en se basant sur chi square
 		"""
 		isLeaf = True
 		fusion = False
@@ -187,9 +230,9 @@ class DecisionTree: #nom de la class à changer
 				attribute = np.where([i == attribute for i in self.names])[0][0]
 				indexCorrect = eval("np.where(data[:, attribute]" + sep + value +")")[0]
 
-				look_parent, pruned, fusion = self.pruningLeaves(decision_tree[parent], data[indexCorrect,:], labels[indexCorrect])  # on élague et on rempace le noeud par un noeud feuille
+				look_parent, pruned, fusion = self.pruningLeaves(decision_tree[parent], data[indexCorrect,:], labels[indexCorrect]) # appel récursif évalué lorsqu'on a deux feuilles
 				if pruned or fusion:
-					decision_tree[parent] = look_parent
+					decision_tree[parent] = look_parent 
 			else : pred_node.append(decision_tree[key])
 		
 		if isLeaf: 
@@ -215,13 +258,13 @@ class DecisionTree: #nom de la class à changer
 			nb_expected_right = p_right * nb_uniques_root 
 			# calcul de delta
 			delta = np.sum(np.divide((nb_expected_left-nb_uniques_child_left)**2 , nb_expected_left) + np.divide((nb_expected_right-nb_uniques_child_right)**2 , nb_expected_right) )
-			#print(attribute + " <= " + str(value))
-			#dof = max((len(np.unique(labels_child_left)) - 1) * (len(uniques_root) - 1), 1)
+			# degré de libertés
 			dof = (len(uniques_root) - 1)
 			if delta < chi2.isf(q=alpha, df=dof): 
 				pruned = True
 				return self.classifyData(labels), pruned, False # on fait l'élagage, on rejette l'hypothèse et on garde la classe majoritaire
 
+		# ici permet de réduire la taille de l'abre si deux branches d'un noeud prédisent la même classe
 		if len(pred_node) > 1 : 
 			if len(np.unique(pred_node)) == 1 :
 				fusion = True
@@ -230,13 +273,14 @@ class DecisionTree: #nom de la class à changer
 		return decision_tree, pruned, fusion
 
 	def pruningTree(self, decision_tree, data, labels):
-		"""takes decision tree as parameter and returns a pruned tree based on chi square
-			params:
-				obj (dict):
-				obj is a decision tree encoded in the form of decision tree
-			return:
-				obj (dict):
-				obj is decision tree with pruned leaves
+		"""
+		Méthode qui fait l'élagage d'un arbre complet par appel à pruningLeaves.
+		Paramètres:
+			decision_tree: un arbre de décision (dict)
+			data: les données, matrice numpy de taille nxm
+		 	labels: les classes des données, matrice numpy de taille nx1
+		Retourne:
+			decision_tree: arbre élagué avec la méthode chi squarred
 		"""
 		if isinstance(decision_tree, dict):
 			pruned = True
@@ -252,6 +296,20 @@ class DecisionTree: #nom de la class à changer
 		return decision_tree
 
 	def build_learning_curve(self, train, train_labels, seed, do_pruning = False):
+		"""
+		C'est la méthode qui va permettre de voir si notre modèle apprend correctement.
+		Nous entraînons le modèle 99 fois en utilisant un jeu d'entraînement de taille entre 1 et 99 et un 
+		jeu de test sur les données restantes.
+		Paramètres:
+			train est une matrice de type Numpy et de taille 100xm, avec 
+				m: le nombre d'attributs (le nombre de caractéristiques)
+			train_labels : est une matrice numpy de taille 100x1
+			seed: hasard utilisé
+			do_pruning: booléen valant True si on souhaite faire l'élagage après l'entraînement
+		Retourne:
+			acc: liste des exactitudes à chaque itération
+			size: liste des tailles du jeu de données d'entraînement utilisées à chaque itérations (nombre d'instances)
+		"""
 		size = []
 		acc = []
 		np.random.seed(seed) 
@@ -275,6 +333,15 @@ class DecisionTree: #nom de la class à changer
 		return acc, size
 
 	def show_learning_curve(self, list_acc, list_size, dataset, do_pruning = False)	:
+		"""
+		Méthode qui permet d'enregistrer les courbes d'entraînement calculées avec
+		build_learning_curve.
+		Paramètres:
+			list_acc: la liste des exactitudes entre les labels test et les prédictions sur le jeu de test
+			list_size: la liste des tailles du jeu d'entraînement utilisés
+			dataset: le nom du dataset (str)
+			do_pruning: booléen, qui influe sur le nom du fichier
+		"""
 		size = np.mean(list_size, axis = 0)
 		acc = np.mean(list_acc, axis = 0)
 		print("dernière exactitude", acc[-1])
@@ -288,6 +355,21 @@ class DecisionTree: #nom de la class à changer
 		#plt.show()
 
 	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
+		"""
+		Méthode récursive qui permet de réarranger l'abre de décision en ne retenant que les relations, appelée par drawTree.
+		Paramètres:
+			edges: les relations entre deux noeuds déjà trouvées
+			edge_labels: les labels associés aux edges (règles sur une branche)
+			oldAttribute: l'attribut du noeud parent
+			oldValue: la valeur de coupe de la règle parente
+			sep: la comparaison (str) (<= ou >)
+			index: index ajouté au nom des attributs qui permet de différencier chaque noeud
+		Retourne:
+			edges: les nouvelles relations entre deux noeuds
+			edge_labels: les nouveaux labels associés aux edges (règles sur une branche)
+			value: la valeur de coupe de la règle actuelle
+			index: index incrémenté
+		"""
 		index +=1
 		if isinstance(decision_tree, dict):
 			questions = list(decision_tree.keys())
@@ -309,7 +391,13 @@ class DecisionTree: #nom de la class à changer
 	   
 
 	def drawTree(self, decision_tree, dataset, name="big"):
-
+		"""
+		Méthode qui permet de dessiner l'abre de décision
+		Paramètres:
+			decision_tree: arbre de décision (dict)
+			dataset: nom du dataset (str)
+			name: str utilisé pour le nom du fichier .png créé (par exemple "elague" ou "big")
+		"""
 		plt.figure(figsize = (12, 12))
 		edges, edges_labels, _, _ = self.extractEdgesFromTree(decision_tree)
 		G = nx.DiGraph()
@@ -337,4 +425,5 @@ class DecisionTree: #nom de la class à changer
 		)
 		plt.axis('off')
 		plt.savefig("tree_{}_{}.png".format(name, dataset))
+		
 		#plt.show()
