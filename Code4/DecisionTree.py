@@ -122,7 +122,7 @@ class DecisionTree: #nom de la class à changer
 		return potentialSplits
 
 
-	def train(self, train, train_labels, current_depth = 0, max_depth = None): #vous pouvez rajouter d'autres attributs au besoin
+	def train(self, train, train_labels, current_depth = 0, max_depth = None): 
 		"""
 		C'est la méthode récursive qui va entrainer le modèle en créant un arbre de décision.
 		Paramètres:
@@ -351,7 +351,7 @@ class DecisionTree: #nom de la class à changer
 
 		if do_pruning : plt.savefig("figures/learning_curve_pruned_{}.png".format(dataset))
 		else : plt.savefig("figures/learning_curve_{}.png".format(dataset))
-		#plt.show()
+		
 
 	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
 		"""
@@ -425,4 +425,3 @@ class DecisionTree: #nom de la class à changer
 		plt.axis('off')
 		plt.savefig("figures/tree_{}_{}.png".format(name, dataset))
 		
-		#plt.show()

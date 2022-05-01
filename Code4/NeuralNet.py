@@ -155,7 +155,7 @@ class NeuralNet():
 
     def back_propagation(self, deltas, pre_activations, activations):
         """
-        Méthode qui réalise la back-propagation et calcule le gradient avec les poids 
+        Méthode qui réalise la back propagation et calcule le gradient avec les poids 
         et les biais du réseau.
         Paramètres:
             deltas: liste des deltas calculés avec update_deltas
