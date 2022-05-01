@@ -5,7 +5,7 @@ def NormalizeData(data):
     return (data - np.min(data)) / (np.max(data) - np.min(data))
 
 
-def load_iris_dataset(train_ratio, seed=1):
+def load_iris_dataset(train_ratio, seed=1, normalize_data = True):
     """Cette fonction a pour but de lire le dataset Iris
 
     Args:
@@ -48,7 +48,7 @@ def load_iris_dataset(train_ratio, seed=1):
     indices = np.arange(nrow)
 
     # on normalise les données pour plus de précision 
-    data = NormalizeData(data)
+    if normalize_data : data = NormalizeData(data)
 
 	  # les exemples sont ordonnés dans le fichier du dataset, ils sont ordonnés par type de fleur
     # on utilise donc la fonction random.shuffle pour melanger les exemples du dataset avant de séparer
@@ -64,7 +64,7 @@ def load_iris_dataset(train_ratio, seed=1):
     return (train, train_labels, test, test_labels)
 	
 	
-def load_wine_dataset(train_ratio, seed=1):
+def load_wine_dataset(train_ratio, seed=1, normalize_data = True):
     """Cette fonction a pour but de lire le dataset Binary Wine quality
 
     Args:
@@ -97,7 +97,7 @@ def load_wine_dataset(train_ratio, seed=1):
     data=np.array([line[:-1] for line in lines], dtype=float)
 
     # on normalise les données pour plus de précision 
-    data = NormalizeData(data)
+    if normalize_data : data = NormalizeData(data)
 
     # l'étiquette à prédire est la dernière colonne
     labels=np.array([line[-1] for line in lines], dtype=int)
@@ -113,7 +113,7 @@ def load_wine_dataset(train_ratio, seed=1):
 	# La fonction retourne 4 structures de données de type Numpy.
     return (train, train_labels, test, test_labels)
 
-def load_abalone_dataset(train_ratio, seed=1):
+def load_abalone_dataset(train_ratio, seed=1, normalize_data = True):
     """
     Cette fonction a pour but de lire le dataset Abalone-intervalles
 
@@ -148,7 +148,7 @@ def load_abalone_dataset(train_ratio, seed=1):
     data=np.array([line[:-1] for line in lines], dtype=float)
 
     # on normalise les données pour plus de précision 
-    data = NormalizeData(data)
+    if normalize_data : data = NormalizeData(data)
 
     # l'étiquette à prédire est la dernière colonne
     labels=np.array([line[-1] for line in lines], dtype=float)

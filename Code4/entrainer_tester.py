@@ -38,11 +38,11 @@ classif_decisionTree_abalone = DecisionTree.DecisionTree(names = ["Sexe", "Longu
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
-iris = load_datasets.load_iris_dataset(train_ratio)
+iris = load_datasets.load_iris_dataset(train_ratio, normalize_data=False)
 # 2) jeu wine
-wine = load_datasets.load_wine_dataset(train_ratio)
+wine = load_datasets.load_wine_dataset(train_ratio, normalize_data=False)
 # 3) jeu abalone
-abalone = load_datasets.load_abalone_dataset(train_ratio)
+abalone = load_datasets.load_abalone_dataset(train_ratio, normalize_data=False)
 
 # index des variables factorielles
 
