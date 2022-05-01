@@ -1,13 +1,16 @@
+
+############################################################################
+# NeuralNet
+############################################################################
+
 import numpy as np
 import sys
 import load_datasets
-import NeuralNet# importer la classe du NeuralNet
-#importer d'autres fichiers et classes si vous en avez développés
+import NN # importer la classe du NeuralNet
 import metrics
 from time import perf_counter
 import matplotlib.pyplot as plt
-import NN
-from sklearn import datasets
+
 
 
 
@@ -19,17 +22,8 @@ En gros, vous allez :
 2- Charger les datasets
 3- Entraîner votre classifieur
 4- Le tester
-
-test = NeuralNet.NeuralNet(namesAtt=["Att1", "Att2"])
-train_labels = np.array([0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2])
-train = np.array([[1, 2, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1], [1, 1, 1, 1, 1, 2,2, 2, 1, 1, 2, 2], [0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0], [0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1]]).T
-#print(test.determineBestColumn(train, train_labels))
-decision_tree = test.train(train, train_labels)
-
-print(decision_tree)
-
-test.evaluate(train, train_labels, decision_tree)
 """
+
 train_ratio = 0.7
 init_weight_null = False
 
@@ -53,27 +47,24 @@ def binarize(z):
     return(z[:, None] == np.arange(z.max()+1)).astype(int)
 
 
-for dataset in ["abalone"]:
+for dataset in ["iris", "wine", "abalone"]:
    
     train, train_labels, test, test_labels = eval(dataset)
 
-    train_labels, test_labels = binarize(train_labels), binarize(test_labels)
-    best_params = NN.grid_search(train, train_labels)
-    print(best_params)
-   
+    # on convertit les classes en vecteurs one-hot (bit à 1 à l'index de la classe)
+    train_labels, test_labels = binarize(train_labels), binarize(test_labels) 
 
-    #print(np.array([train_labels]))
-    ############################################################################
-    # NeuralNet
-    ############################################################################
+    #best_params = NN.grid_search(train, train_labels)
+    #print(best_params)
+   
     classif_nn = eval("classif_nn_"+dataset)
     print("\n######################################\nClassification NeuralNet / Dataset étudié = {}".format(dataset))
 
     # --> Entraînement du classifieur
     tps1 = perf_counter()
-    history = classif_nn.train(train.T, train_labels.T)
-  
-    #NN.plot_history(history)
+    history = classif_nn.train(train.T, train_labels.T, print_every = 200)
+    tps2 = perf_counter()
+
     # --> Evaluation sur les données d'entraînement
     print("\n######################################\nEvaluation sur les données d'entraînement")
     #classif_nn.evaluate(train, train_labels)
@@ -81,13 +72,16 @@ for dataset in ["abalone"]:
     # --> Evaluation sur les données de test
     print("\n######################################\nEvaluation sur les données de test")
     classif_nn.evaluate(test.T, test_labels.T)
-    tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
-    print("\nTemps d'exécution :", tps2-tps1)
-
+    tps3 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
+  
+    print("\nTemps d'apprentissage :", tps2-tps1)
+    print("\nTemps d'exécution :", tps3-tps1)
+    
     tps1 = perf_counter()
     y_pred = classif_nn.predict(test[0,:].T)
     tps2 = perf_counter() # utilisé pour calculer les performances, avec seulement l'évaluation sur les données test et pas de print
     print("\nTemps de prédiction d'un exemple :", tps2-tps1)
     
+    #NN.plot_history(history)
    
 

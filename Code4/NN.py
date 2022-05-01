@@ -270,7 +270,7 @@ class NeuralNet():
             history_train_accuracies.append(np.mean(train_accuracies))
 
             if e % print_every == 0:    
-                print('Epoch {} / {} | train loss: {} | train accuracy: {}'.format(
+                print('Epoque {} / {} | perte entraînement : {} | exactitude entraînement : {}'.format(
                     e, epochs, np.round(np.mean(train_losses), 3), np.round(np.mean(train_accuracies), 3)))
 
         history = {'epochs': epochs,
