@@ -15,6 +15,7 @@ from metrics import show_metrics
 # tqdm est une barre de progression (si la librairie n'est pas installée -> pip install tqdm)
 from tqdm import tqdm
 
+# fonctions auxiliaires utilisées pour le réseau de neurones
 def activation_relu(x,  derivative=False):
     """
     Fonction d'activation relu
@@ -83,8 +84,17 @@ class NeuralNet():
     def __init__(self, nb_entrees = 1, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 3, batch_size = 16, epochs = 1000, learning_rate = 0.5, weight_null = False, seed=42):
         """
 		C'est un Initializer. 
-		Vous pouvez passer d'autre paramètres au besoin,
-		c'est à vous d'utiliser vos propres notations
+        Paramètres
+        ---
+        nb_entrees          : taille de la couche d'entrée (nombre d'attributs)
+        nb_sorties          : taille de la couche de sortie (nombre de classes)
+        nb_hidden_layers    : nombre de couches cachées
+        nb_neurones         : nombre de neurones dans chaque couche cachée
+        batch_size          : taille de batch utilisée
+        epochs              : nombre d'époques utilisé
+        learning_rate       : taux d'apprentissage
+        weight_null         : booléen valant True si l'on souhaite une initialisation nulle des poids du réseau
+        seed                : hasard pour fixer le hasard
 		"""
         self.seed = seed
         np.random.seed(self.seed)
@@ -109,7 +119,7 @@ class NeuralNet():
 
     def forward(self, input):
         '''
-        Perform a feed forward computation 
+        Permet a feed forward computation 
 
         Parameters
         ---
@@ -159,7 +169,7 @@ class NeuralNet():
             deltas[l] = delta
         return deltas
 
-    def backpropagate(self, deltas, pre_activations, activations):
+    def back_propagation(self, deltas, pre_activations, activations):
         """
         Applies back-propagation and computes the gradient of the loss
         w.r.t the weights and biases of the network
@@ -185,151 +195,20 @@ class NeuralNet():
             db.append(np.expand_dims(db_l.mean(axis=1), 1))
         return dW, db
 
-    def train1(self, X, y, batch_size, epochs, learning_rate, train_split=0.8, print_every=10, tqdm_=False, plot_every=None):
-        """
-        Trains the network using the gradients computed by back-propagation
-        Splits the data in train and validation splits
-        Processes the training data by batches and trains the network using batch gradient descent
-
-        Parameters:
-        ---
-        X: input data
-        y: input labels
-        batch_size: number of data points to process in each batch
-        epochs: number of epochs for the training
-        learning_rate: value of the learning rate
-        validation_split: percentage of the data for validation
-        print_every: the number of epochs by which the network logs the loss and accuracy metrics for train and validations splits
-        tqdm_: use tqdm progress-bar
-        plot_every: the number of epochs by which the network plots the decision boundary
-    
-        Returns:
-        ---
-        history: dictionary of train and validation metrics per epoch
-            train_acc: train accuracy
-            test_acc: validation accuracy
-            train_loss: train loss
-            test_loss: validation loss
-
-        This history is used to plot the performance of the model
-        """
-        history_train_losses = []
-        history_train_accuracies = []
-        history_test_losses = []
-        history_test_accuracies = []
-
-        nrow = X.shape[1]
-        indices = np.arange(nrow)
-        split = math.floor(train_split * nrow)
-        train_idx,    test_idx    = indices[:split],   indices[split:]
-        x_train,        x_test        = X[:, train_idx],   X[:, test_idx]
-        y_train, y_test = y[:, train_idx], y[:, test_idx]
-		
-        if tqdm_:
-            epoch_iterator = tqdm(range(epochs))
-        else:
-            epoch_iterator = range(epochs)
-
-        for e in epoch_iterator:
-            if x_train.shape[1] % batch_size == 0:
-                n_batches = int(x_train.shape[1] / batch_size)
-            else:
-                n_batches = int(x_train.shape[1] / batch_size ) - 1
-
-            idx = np.arange(x_train.shape[1])
-            np.random.shuffle(idx)
-
-            x_train = x_train[:, idx]
-            y_train = y_train[:,idx]
-
-            batches_x = [x_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-            batches_y = [y_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-            
-            train_losses = []
-            train_accuracies = []
-            
-            test_losses = []
-            test_accuracies = []
-
-            dw_per_epoch = [np.zeros(w.shape) for w in self.weights]
-            db_per_epoch = [np.zeros(b.shape) for b in self.biases] 
-            
-            for batch_x, batch_y in zip(batches_x, batches_y):
-                batch_y_pred, pre_activations, activations = self.forward(batch_x)
-                deltas = self.update_deltas(pre_activations, batch_y, batch_y_pred)
-                dW, db = self.backpropagate(deltas, pre_activations, activations)
-                for i, (dw_i, db_i) in enumerate(zip(dW, db)):
-                    dw_per_epoch[i] += dw_i / batch_size
-                    db_per_epoch[i] += db_i / batch_size
-
-                batch_y_train_pred = self.predict(batch_x)
-                print(batch_y)
-                print(batch_y_train_pred)
-                train_loss = cost_function(batch_y, batch_y_train_pred)
-                train_losses.append(train_loss)
-                train_accuracy = np.mean(batch_y[0] == batch_y_train_pred[0])
-                train_accuracies.append(train_accuracy)
-                
-                batch_y_test_pred = self.predict(x_test)
-
-                test_loss = cost_function(y_test, batch_y_test_pred)
-                test_losses.append(test_loss)
-                test_accuracy = np.mean(y_test[0] == batch_y_test_pred[0])
-                test_accuracies.append(test_accuracy)
-
-
-            # weight update
-            for i, (dw_epoch, db_epoch) in enumerate(zip(dw_per_epoch, db_per_epoch)):
-                self.weights[i] = self.weights[i] - learning_rate * dw_epoch
-                self.biases[i] = self.biases[i] - learning_rate * db_epoch
-
-            history_train_losses.append(np.mean(train_losses))
-            history_train_accuracies.append(np.mean(train_accuracies))
-            
-            history_test_losses.append(np.mean(test_losses))
-            history_test_accuracies.append(np.mean(test_accuracies))
-
-
-            if not plot_every:
-                if e % print_every == 0:    
-                    print('Epoch {} / {} | train loss: {} | train accuracy: {} | val loss : {} | val accuracy : {} '.format(
-                        e, epochs, np.round(np.mean(train_losses), 3), np.round(np.mean(train_accuracies), 3), 
-                        np.round(np.mean(test_losses), 3),  np.round(np.mean(test_accuracies), 3)))
-            else:
-                if e % plot_every == 0:
-                    self.plot_decision_regions(x_train, y_train, e, 
-                                                np.round(np.mean(train_losses), 4), 
-                                                np.round(np.mean(test_losses), 4),
-                                                np.round(np.mean(train_accuracies), 4), 
-                                                np.round(np.mean(test_accuracies), 4), 
-                                                )
-                    plt.show()                    
-                    display.display(plt.gcf())
-                    display.clear_output(wait=True)
-
-        history = {'epochs': epochs,
-                   'train_loss': history_train_losses, 
-                   'train_acc': history_train_accuracies,
-                   'valid_loss': history_test_losses,
-                   'valid_acc': history_test_accuracies
-                   }
-        print(history_train_accuracies)
-        return history
-        
-    def train(self, x_train, y_train, print_every=10, tqdm_=False):
+    def train(self, train, train_labels, print_every=10, tqdm_=False):
        	"""
 		C'est la méthode qui va entrainer votre modèle,
-		train est une matrice de type Numpy et de taille nxm, avec 
-		n : le nombre d'exemple d'entrainement dans le dataset
+		train est une matrice de type Numpy et de taille mxn, avec 
+		n : le nombre d'exemples d'entrainement dans le dataset
 		m : le nombre d'attributs (le nombre de caractéristiques)
 		
-		train_labels : est une matrice numpy de taille nx1
-		
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
+		train_labels : est une matrice numpy de taille cxn
+        c : nombre de classes 
+        --> par exemple :
+                train_labels.T[0,:] = [1 0 0]
+                est un vecteur encodé si on a trois classes
 		
 		"""
-
         history_train_losses = []
         history_train_accuracies = []
         batch_size = self.batch_size
@@ -342,19 +221,19 @@ class NeuralNet():
             epoch_iterator = range(epochs)
 
         for e in epoch_iterator:
-            if x_train.shape[1] % batch_size == 0:
-                n_batches = int(x_train.shape[1] / batch_size)
+            if train.shape[1] % batch_size == 0:
+                n_batches = int(train.shape[1] / batch_size)
             else:
-                n_batches = int(x_train.shape[1] / batch_size ) - 1
+                n_batches = int(train.shape[1] / batch_size ) - 1
 
-            idx = np.arange(x_train.shape[1])
+            idx = np.arange(train.shape[1])
             np.random.shuffle(idx)
 
-            x_train = x_train[:, idx]
-            y_train = y_train[:,idx]
+            train = train[:, idx]
+            train_labels = train_labels[:,idx]
 
-            batches_x = [x_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
-            batches_y = [y_train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
+            batches_x = [train[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
+            batches_y = [train_labels[:, batch_size*i:batch_size*(i+1)] for i in range(0, n_batches)]
 
             train_losses = []
             train_accuracies = []
@@ -365,7 +244,7 @@ class NeuralNet():
             for batch_x, batch_y in zip(batches_x, batches_y):
                 batch_y_pred, pre_activations, activations = self.forward(batch_x)
                 deltas = self.update_deltas(pre_activations, batch_y, batch_y_pred)
-                dW, db = self.backpropagate(deltas, pre_activations, activations)
+                dW, db = self.back_propagation(deltas, pre_activations, activations)
                 for i, (dw_i, db_i) in enumerate(zip(dW, db)):
                     dw_per_epoch[i] += dw_i / batch_size
                     db_per_epoch[i] += db_i / batch_size
@@ -402,22 +281,19 @@ class NeuralNet():
         
     def predict(self, a):
         '''
-        Use the current state of the network to make predictions
+        Utilisation de l'état actuel du réseau de neurones pour faire les prédictions
 
-        Parameters:
+        Paramètres:
         ---
-        a: input data, shape: (input_shape, batch_size)
+        a: matrice d'entrée, de taille: (input_shape, batch_size)
 
-        Returns:
+        Retourne:
         ---
-        predictions: vector of output predictions
+        prédictions: matrice de prédictions (probabilité pour chacune des classes) de taille (input_shape, batch_size)
         '''
-        #print(a)
         for w, b in zip(self.weights, self.biases):
             z = np.dot(w, a) + b
             a = activation_sigmoid(z)
-       
-        #predictions = (a > 0.5).astype(int)
         return a
         
     def evaluate(self, X, y):
@@ -428,58 +304,56 @@ class NeuralNet():
 		m : le nombre d'attributs (le nombre de caractéristiques)
 		
 		y : est une matrice numpy de taille nx1
-		
-		vous pouvez rajouter d'autres arguments, il suffit juste de
-		les expliquer en commentaire
 		"""
         y_pred_proba = self.predict(X)
-        y_pred = np.argmax(y_pred_proba, axis = 0)
+        y_pred = np.argmax(y_pred_proba, axis = 0) # on convertit les probabilités en classes
         y = np.argmax(y, axis = 0)
         show_metrics(y, y_pred)
 
 def plot_history(history, show_valid = False):
+    """
+    permet d'afficher l'historique d'un entraînement, la perte et l'exactitude en fonction du nombre d'époques
+    """
     n = history['epochs']
     plt.figure(figsize=(15, 5))
     plt.subplot(1, 2, 1)
     n = 4000
     plt.plot(range(history['epochs'])[:n], history['train_loss'][:n], label='Perte en entraînement')
     if show_valid : plt.plot(range(history['epochs'])[:n], history['valid_loss'][:n], label='Perte en validation')
-    #plt.title('Perte en entraînement et en validation')
-    #plt.grid(1)
     plt.xlabel('Époques')
     plt.legend()
 
     plt.subplot(1, 2, 2)
     plt.plot(range(history['epochs'])[:n], history['train_acc'][:n], label='Exactitude en entraînement')
     if show_valid : plt.plot(range(history['epochs'])[:n], history['valid_acc'][:n], label='Exactitude en validation')
-    #plt.title('Exactitudes en entraînement et en validation')
-    #plt.grid(1)
     plt.xlabel('Époques')
     plt.legend()
     plt.show()
 
 
-def grid_search(train, train_labels, list_batch_size=[64], list_epochs=[1000], list_learning_rate=[0.5], k = 10, list_nb_neurones = range(2, 12), list_nb_hidden_layers = [1]):
+def grid_search(train, train_labels, list_batch_size=[64], list_epochs=[1000], list_learning_rate=[0.5], k = 10, list_nb_neurones = [10], list_nb_hidden_layers = range(1, 6)):
     """
     Fonction qui permet de rechercher les meilleurs hyperparamètres
+
+    Permet d'afficher l'erreur moyenne lors de la validation croisée en fonction du paramètre testé
+    Renvoie un tuple contenant les paramètres qui minimisent cette erreur.
     """
     fold_indices = np.arange(train.shape[0])
     valid_indices = np.array_split(fold_indices, k)
-   
-	# initialisation d'un tableau qui contient les exactitudes pour chaque échantillon
-    
-    print(train.shape)
+
     max_mean_accuracy = None
     
     for learning_rate in list_learning_rate:
         for batch_size in list_batch_size :
             for epochs in list_epochs:
 
+                # initialisation d'un tableau qui contient les moyennes des erreurs en validation et en entraînement
                 error_valid = []
                 error_train = []
                 for nb_hidden_layers in list_nb_hidden_layers:
                     for nb_neurones in list_nb_neurones:
                         # 2-1) boucle de validation croisée
+                        # listes des accuracies pour tous les k-folds
                         all_accuracy_valid = []
                         all_accuracy_train = []
                         for i_fold in range(k):
@@ -496,7 +370,6 @@ def grid_search(train, train_labels, list_batch_size=[64], list_epochs=[1000], l
                             all_accuracy_valid.append(np.mean(np.argmax(valid_lab.T, axis = 0) == np.argmax(valid_pred, axis=0)))
                             all_accuracy_train.append(history['train_acc'][-1])
                             
-
                         # 2-2) moyenne des exactitudes pour les hyperparamètres
                         mean_accuracy = np.mean(all_accuracy_valid)
                         error_valid.append(1-mean_accuracy)
@@ -515,10 +388,14 @@ def grid_search(train, train_labels, list_batch_size=[64], list_epochs=[1000], l
         plt.plot(list_nb_neurones, error_train, label ='Erreur moyenne en entraînement')
         plt.plot(list_nb_neurones, error_valid, label ='Erreur moyenne en validation')
         plt.xlabel('Nombre de neurones')
-    else : 
+    elif len(list_nb_hidden_layers) > 1 :
         plt.plot(list_nb_hidden_layers, error_train, label ='Erreur moyenne en entraînement')
         plt.plot(list_nb_hidden_layers, error_valid, label ='Erreur moyenne en validation')
         plt.xlabel('Nombre de couches cachées')
+    elif len(list_epochs) > 1 :
+        plt.plot(list_epochs, error_train, label ='Erreur moyenne en entraînement')
+        plt.plot(list_epochs, error_valid, label ='Erreur moyenne en validation')
+        plt.xlabel("Nombre d'époques")
     plt.legend()
     plt.show()
     return best_nb_neurones, best_hidden_layers, best_batch_size, best_epochs, best_learning_rate

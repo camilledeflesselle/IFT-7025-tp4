@@ -36,7 +36,7 @@ init_weight_null = False
 # --> 1- Initialisation des classifieurs avec leurs paramètres
 classif_nn_iris = NN.NeuralNet(nb_entrees = 4, nb_sorties = 3, nb_hidden_layers = 2, nb_neurones =4, batch_size = 16, epochs = 1000, learning_rate = 0.5, weight_null=init_weight_null)
 classif_nn_wine = NN.NeuralNet(nb_entrees = 11, nb_sorties = 2, nb_hidden_layers = 1, nb_neurones = 6, batch_size = 64, epochs = 20000, learning_rate = 0.5, weight_null=init_weight_null)
-classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 5, batch_size = 64, epochs = 100, learning_rate = 0.5, weight_null=init_weight_null)
+classif_nn_abalone = NN.NeuralNet(nb_entrees = 8, nb_sorties = 3, nb_hidden_layers = 1, nb_neurones = 10, batch_size = 64, epochs = 1000, learning_rate = 0.5, weight_null=init_weight_null)
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
