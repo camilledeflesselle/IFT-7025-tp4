@@ -349,8 +349,8 @@ class DecisionTree: #nom de la class à changer
 		plt.xlabel("Taille du jeu d'entraînement")
 		plt.ylabel("Exactitude sur les données test")
 
-		if do_pruning : plt.savefig("learning_curve_pruned_{}.png".format(dataset))
-		else : plt.savefig("learning_curve_{}.png".format(dataset))
+		if do_pruning : plt.savefig("figures/learning_curve_pruned_{}.png".format(dataset))
+		else : plt.savefig("figures/learning_curve_{}.png".format(dataset))
 		#plt.show()
 
 	def extractEdgesFromTree(self, decision_tree, edges = [], edge_labels = {}, oldAttribute = None, olDvalue = None, sep = " <= ", index=0):
@@ -423,6 +423,6 @@ class DecisionTree: #nom de la class à changer
 			font_size = 15
 		)
 		plt.axis('off')
-		plt.savefig("tree_{}_{}.png".format(name, dataset))
+		plt.savefig("figures/tree_{}_{}.png".format(name, dataset))
 		
 		#plt.show()
