@@ -33,7 +33,7 @@ train_ratio = 0.7
 # --> 1- Initialisation des classifieurs avec leurs paramètres
 classif_decisionTree_iris = DecisionTree.DecisionTree(names = ["Longueur sépale", "Largeur sépale", "Longueur pétale", "Largeur pétale"], index_fact = None, conversion_labels={'0': 'Iris-setosa', '1' : 'Iris-versicolor', '2' : 'Iris-virginica'})
 classif_decisionTree_wine = DecisionTree.DecisionTree(names = ["Acidité fixe", "Acide volatile", "Acide citrique", "Sucre résiduel", "Ch de sodium", "Dioxyde de soufre libre", "Dioxyde de soufre total", "densité", "pH", "sulfate de potassium", "alcool"],index_fact = None, conversion_labels=None)
-classif_decisionTree_abalone = DecisionTree.DecisionTree(names = ["Sexe", "Longueur coquille", "Diamètre coquille", "Hauteur", "Poids total", "Poids chair", "Poids viscères", "Poids coquille"], index_fact = None, conversion_labels=None)
+classif_decisionTree_abalone = DecisionTree.DecisionTree(index_fact = [0], names = ["Sexe", "Longueur coquille", "Diamètre coquille", "Hauteur", "Poids total", "Poids chair", "Poids viscères", "Poids coquille"], conversion_labels=None)
 
 # --> 2- Chargement du dataset
 # 1) jeu iris
@@ -45,7 +45,7 @@ abalone = load_datasets.load_abalone_dataset(train_ratio, normalize_data=False)
 
 # index des variables factorielles
 
-for dataset in ["iris"]:
+for dataset in ["abalone"]:
     train, train_labels, test, test_labels = eval(dataset)
     """
     nrow = len(train_labels)

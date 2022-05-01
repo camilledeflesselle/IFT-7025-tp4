@@ -78,7 +78,7 @@ class DecisionTree: #nom de la class à changer
 		for column in range(columns):
 			values = data[:, column]
 			uniqueValues = np.unique(values) # uniques valeurs
-			if len(uniqueValues) == 1:
+			if len(uniqueValues) == 1 or (self.index_fact != None and column in self.index_fact) :
 				potentialSplits[column] = uniqueValues
 			else:
 				potentialSplits[column] = []
@@ -112,40 +112,19 @@ class DecisionTree: #nom de la class à changer
 			potentialSplits = self.getPotentialSplits(train)
 			racine, best_split_value = self.determineBestColumn(train, train_labels, potentialSplits)
 			decisionSubTree = {}
-			if self.index_fact !=None and racine in self.index_fact : # si l'attribut est de type factoriel 
-				uniquesValuesRacine = np.unique(train[:, racine])
-				for value in uniquesValuesRacine :
-					question = "{} == {}".format(self.names[racine], value)
-					index = np.where(train[:, racine]==value)[0]
-					dataB = train[index, :]  # classes des individus dont la valeur de l'attribut est i
-					labelsB = train_labels[index]
-					yesAnswer = self.train(dataB, labelsB, current_depth, max_depth)
-					decisionSubTree[question] = yesAnswer
-				return decisionSubTree
+			# on traite les attributs comme des attributs continus, l'arbre de décision est fait sur un intervalle
+			questionInf = "{} <= {}".format(self.names[racine], best_split_value)
+			questionSup = "{} > {}".format(self.names[racine], best_split_value)
+			indexInf = np.where(train[:, racine]<=best_split_value)[0]
+			dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
+			labelsInf = train_labels[indexInf]
+			decisionSubTree[questionInf] = self.train(dataInf, labelsInf, current_depth, max_depth)
 
-			else : # si l'attribut est numérique, l'arbre de décision est fait sur un intervalle
-				#value = np.mean(train[:, racine])
-				questionInf = "{} <= {}".format(self.names[racine], best_split_value)
-				questionSup = "{} > {}".format(self.names[racine], best_split_value)
-				indexInf = np.where(train[:, racine]<=best_split_value)[0]
-				dataInf = train[indexInf, :]  # classes des individus dont la valeur de l'attribut est i
-				labelsInf = train_labels[indexInf]
-				decisionSubTree[questionInf] = self.train(dataInf, labelsInf, current_depth, max_depth)
-
-				indexSup = np.where(train[:, racine]>best_split_value)[0]
-				dataSup = train[indexSup, :]  # classes des individus dont la valeur de l'attribut est i
-				labelsSup = train_labels[indexSup]
-				decisionSubTree[questionSup] = self.train(dataSup, labelsSup, current_depth, max_depth)
-				return decisionSubTree
-    
-	def separate_att(self, question, sep = " == "):
-		if len(question.split(sep)) > 1: 
-			attribute, value = question.split(sep)
-		else : 
-			return None
-		index = [i==attribute for i in self.names]
-		attribute = np.where(index)[0]
-		return [int(attribute), float(value)]
+			indexSup = np.where(train[:, racine]>best_split_value)[0]
+			dataSup = train[indexSup, :]  # classes des individus dont la valeur de l'attribut est i
+			labelsSup = train_labels[indexSup]
+			decisionSubTree[questionSup] = self.train(dataSup, labelsSup, current_depth, max_depth)
+			return decisionSubTree
 
 	def predict(self, x, decision_tree):
 		"""
@@ -156,22 +135,15 @@ class DecisionTree: #nom de la class à changer
 			return decision_tree
 		
 		questions = list(decision_tree.keys())
-		list_map = np.array([self.separate_att(question) for question in questions])
-		if self.index_fact !=None and list_map.all() !=None : 
-			index = np.where(list_map[:, 1]==float(x[int(list_map[0, 0])]))
-			#print(x)
-			#print(index)
-			index = index[0][0]
-			answer = decision_tree[questions[index]]
-		else :
-			question = questions[0]
-			attribute, value = question.split(" <= ")
-			index = [i==attribute for i in self.names]
-			attribute = np.where(index)[0]
-			if x[int(attribute)] <= float(value):
-				answer = decision_tree[questions[0]]
-			else:
-				answer = decision_tree[questions[1]]
+		
+		question = questions[0]
+		attribute, value = question.split(" <= ")
+		index = [i==attribute for i in self.names]
+		attribute = np.where(index)[0]
+		if x[int(attribute)] <= float(value):
+			answer = decision_tree[questions[0]]
+		else:
+			answer = decision_tree[questions[1]]
 		return self.predict(x, answer)
 	
 	def evaluate(self, X, y, decision_tree):
@@ -199,7 +171,7 @@ class DecisionTree: #nom de la class à changer
 		- un arbre élagué 1 fois en se basant sur chi square
 		"""
 		isLeaf = True
-		#print(decision_tree)
+		fusion = False
 		pruned = False
 		pred_node = []
 		for key in list(decision_tree.keys()):
@@ -210,9 +182,6 @@ class DecisionTree: #nom de la class à changer
 				question = parent.split(sep)
 				if len(question)<2 : 
 					sep = " > "
-					question = parent.split(sep)
-				if len(question)<2 : 
-					sep = " == "
 					question = parent.split(sep)
 				attribute, value = question[0], question[1]
 				attribute = np.where([i == attribute for i in self.names])[0][0]
@@ -244,35 +213,19 @@ class DecisionTree: #nom de la class à changer
 
 			nb_expected_left = p_left * nb_uniques_root
 			nb_expected_right = p_right * nb_uniques_root 
-			"""
-			print("N", nb_uniques_root)
-			print("N_left", nb_uniques_child_left)
-			print("N_right", nb_uniques_child_right)
-
-			print("p_left", p_left)
-			print("p_right", p_right)
-			print("N'_left", nb_expected_left)
-			print("N'_right", nb_expected_right)
-			"""
 			# calcul de delta
 			delta = np.sum(np.divide((nb_expected_left-nb_uniques_child_left)**2 , nb_expected_left) + np.divide((nb_expected_right-nb_uniques_child_right)**2 , nb_expected_right) )
 			#print(attribute + " <= " + str(value))
-			print(labels, labels_child_left)
 			#dof = max((len(np.unique(labels_child_left)) - 1) * (len(uniques_root) - 1), 1)
 			dof = (len(uniques_root) - 1)
-			print(delta,  chi2.isf(q=alpha, df=dof))
 			if delta < chi2.isf(q=alpha, df=dof): 
 				pruned = True
 				return self.classifyData(labels), pruned, False # on fait l'élagage, on rejette l'hypothèse et on garde la classe majoritaire
 
-
 		if len(pred_node) > 1 : 
 			if len(np.unique(pred_node)) == 1 :
-				print("uniquelab")
-				print(decision_tree)
 				fusion = True
 				decision_tree = self.classifyData(labels)
-		#pruned = False
 			
 		return decision_tree, pruned, fusion
 
@@ -289,7 +242,6 @@ class DecisionTree: #nom de la class à changer
 			pruned = True
 			new_decision_tree = decision_tree
 			while pruned and new_decision_tree != "pruned":
-				#print("itération")
 				#continue l'élagage tant qu'il est possible ou jusqu'à ce que l'abre soit entièrement élagué 
 				new_decision_tree, pruned, _ = self.pruningLeaves(decision_tree, data, labels)
 				if isinstance(new_decision_tree, float) or isinstance(new_decision_tree, np.int64):
