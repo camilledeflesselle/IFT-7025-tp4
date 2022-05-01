@@ -459,7 +459,7 @@ def plot_history(history, show_valid = False):
     plt.show()
 
 
-def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[1000], list_learning_rate=[0.5], k = 5, list_nb_neurones = range(2, 50), list_nb_hidden_layers = [1]):
+def grid_search(train, train_labels, list_batch_size=[64], list_epochs=[1000], list_learning_rate=[0.5], k = 10, list_nb_neurones = range(2, 12), list_nb_hidden_layers = [1]):
     """
     Fonction qui permet de rechercher les meilleurs hyperparamètres
     """
@@ -474,9 +474,10 @@ def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[1000], l
     for learning_rate in list_learning_rate:
         for batch_size in list_batch_size :
             for epochs in list_epochs:
+
+                error_valid = []
+                error_train = []
                 for nb_hidden_layers in list_nb_hidden_layers:
-                    error_valid = []
-                    error_train = []
                     for nb_neurones in list_nb_neurones:
                         # 2-1) boucle de validation croisée
                         all_accuracy_valid = []
@@ -509,10 +510,15 @@ def grid_search(train, train_labels, list_batch_size=[16], list_epochs=[1000], l
                             best_batch_size = batch_size
                             best_epochs = epochs
                             best_learning_rate = learning_rate
-
-    plt.plot(list_nb_neurones, error_train, label ='Erreur moyenne en entraînement')
-    plt.plot(list_nb_neurones, error_valid, label ='Erreur moyenne en validation')
-    plt.xlabel('Nombre de neurones')
+    
+    if len(list_nb_neurones) > 1 :
+        plt.plot(list_nb_neurones, error_train, label ='Erreur moyenne en entraînement')
+        plt.plot(list_nb_neurones, error_valid, label ='Erreur moyenne en validation')
+        plt.xlabel('Nombre de neurones')
+    else : 
+        plt.plot(list_nb_hidden_layers, error_train, label ='Erreur moyenne en entraînement')
+        plt.plot(list_nb_hidden_layers, error_valid, label ='Erreur moyenne en validation')
+        plt.xlabel('Nombre de couches cachées')
     plt.legend()
     plt.show()
     return best_nb_neurones, best_hidden_layers, best_batch_size, best_epochs, best_learning_rate
